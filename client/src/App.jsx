@@ -4,6 +4,7 @@ import Header from './components/Header.jsx';
 import CartButton from './components/CartButton.jsx';
 import CartDrawer from './components/CartDrawer.jsx';
 import MenuPage from './pages/MenuPage.jsx';
+import OrderTrackingPage from './pages/OrderTrackingPage.jsx';
 
 export default function App() {
   const { me, error, beWaiter, switchRole, setCurrentOrder } = useSession();
@@ -48,10 +49,11 @@ export default function App() {
       <main className="mx-auto w-full max-w-6xl flex-1 px-5 py-8">
         {role === 'waiter' && <CenteredNote>Waiter dashboard — next commit.</CenteredNote>}
         {role === 'customer' && view === 'menu' && <MenuPage />}
-        {role === 'customer' && view === 'order' && (
-          <CenteredNote>
-            Order #{me.currentOrderId} placed. The live tracking screen lands in the next commit.
-          </CenteredNote>
+        {role === 'customer' && view === 'order' && me.currentOrderId && (
+          <OrderTrackingPage
+            orderId={me.currentOrderId}
+            onNewOrder={() => { setCurrentOrder(null); setView('menu'); }}
+          />
         )}
       </main>
 
