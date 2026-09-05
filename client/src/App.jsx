@@ -3,6 +3,7 @@ import { useSession } from './context/SessionContext.jsx';
 import Header from './components/Header.jsx';
 import CartButton from './components/CartButton.jsx';
 import CartDrawer from './components/CartDrawer.jsx';
+import LandingPage from './pages/LandingPage.jsx';
 import MenuPage from './pages/MenuPage.jsx';
 import OrderTrackingPage from './pages/OrderTrackingPage.jsx';
 import WaiterDashboard from './pages/WaiterDashboard.jsx';
@@ -10,15 +11,17 @@ import WaiterDashboard from './pages/WaiterDashboard.jsx';
 export default function App() {
   const { me, error, setRole, resetVisit, setCurrentOrder } = useSession();
   const [cartOpen, setCartOpen] = useState(false);
-  const [view, setView] = useState('menu'); // 'menu' | 'order' | 'waiter'
+  const [entered, setEntered] = useState(false);
+  const [view, setView] = useState('landing'); // 'landing' | 'menu' | 'order' | 'waiter'
 
   // Keep the view in step with the session (e.g. after a refresh mid-order).
   useEffect(() => {
     if (!me) return;
     if (me.role === 'waiter') setView('waiter');
     else if (me.currentOrderId) setView('order');
-    else setView('menu');
-  }, [me]);
+    else if (entered || me.tableNumber) setView('menu');
+    else setView('landing');
+  }, [me, entered]);
 
   if (error && !me) return <CenteredNote>Could not reach the server. {error}</CenteredNote>;
   if (!me) return <CenteredNote>Loading…</CenteredNote>;
@@ -27,6 +30,7 @@ export default function App() {
 
   async function onRoleChange(next) {
     if (next === role) return;
+    if (next === 'customer') setEntered(false); // land a fresh customer on the welcome screen
     await setRole(next);
   }
 
@@ -43,14 +47,28 @@ export default function App() {
         tableNumber={me.tableNumber}
         role={role}
         onRoleChange={onRoleChange}
-        right={role === 'customer' ? <CartButton onClick={() => setCartOpen(true)} /> : null}
+        right={
+          role === 'customer' && view !== 'landing'
+            ? <CartButton onClick={() => setCartOpen(true)} />
+            : null
+        }
       />
 
       <main className="mx-auto w-full max-w-6xl flex-1 px-5 py-8">
         {role === 'waiter' && <WaiterDashboard />}
+        {role === 'customer' && view === 'landing' && (
+          <LandingPage
+            restaurant={me.restaurant}
+            tableNumber={me.tableNumber}
+            onEnter={() => { setEntered(true); setView('menu'); }}
+          />
+        )}
         {role === 'customer' && view === 'menu' && <MenuPage />}
         {role === 'customer' && view === 'order' && me.currentOrderId && (
-          <OrderTrackingPage orderId={me.currentOrderId} onNewOrder={resetVisit} />
+          <OrderTrackingPage
+            orderId={me.currentOrderId}
+            onNewOrder={async () => { setEntered(false); await resetVisit(); }}
+          />
         )}
       </main>
 

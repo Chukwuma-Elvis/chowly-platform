@@ -130,8 +130,14 @@ The build was done with an AI coding assistant (Claude, via Claude Code).
 
 ## 3. What the application does, step by step
 
+### Welcome screen
+Opening the app shows a short welcome page for the active venue — its name and address,
+a one-line explanation of how ordering works, and a **View the menu** button. It is shown
+only to a fresh customer; someone with an order already in progress goes straight to
+their tracking screen, and the waiter view skips it entirely.
+
 ### Menu browsing
-Opening the app shows the menu for the active venue — every available item, with a
+**View the menu** opens the menu for the active venue — every available item, with a
 `BROWSE` sidebar listing **All** and the five categories (Starters, Main Courses, Sides,
 Desserts, Drinks) with a live count each. Each card shows the preparation time, the price
 in naira, the name and a short description. No identity is needed to browse.
@@ -180,7 +186,7 @@ Everything above is stored in PostgreSQL — refreshing any screen reloads the s
 
 ## 4. How to use the deployed link
 
-1. **Open the link.** You are the customer, at the menu.
+1. **Open the link.** You land on the venue's welcome screen — click **View the menu**.
 2. **Browse.** Use the `BROWSE` sidebar to filter by category.
 3. **Order.** Add a few items, open the cart (top-right), **Continue**, enter a table
    number like `T05`, **Place order**. You are now on the tracking screen with a wait
