@@ -28,21 +28,30 @@ waiter", so the app has a **Customer / Waiter** toggle in the header and nothing
 ### 1.2 Structure
 
 ```
-db/         schema.sql, seed.sql, 00_create_role_and_db.sql, setup.mjs
-server/     Express API (also serves the built client in production)
-  src/index.js            app wiring, session, static SPA serving
-  src/db.js               one pg Pool + a query() helper
-  src/config.js           the active RESTAURANT_ID, the bar-vs-kitchen split
-  src/middleware.js       requireCustomer / requireWaiter guards
-  src/routes/session.js   /api/me, /api/session/*
-  src/routes/menu.js      /api/menu, /api/staff
-  src/routes/orders.js    everything order-shaped
-client/     Vite + React SPA
-  src/context/SessionContext.jsx   loads /api/me, exposes role changes
-  src/context/CartContext.jsx      the in-progress order
-  src/pages/       MenuPage, OrderTrackingPage, WaiterDashboard
-  src/components/  Header, RoleToggle, CategorySidebar, MenuItemCard,
-                   CartDrawer, WaitCountdown, PrepTeam, OrderPanels, ...
+db/
+  00_create_role_and_db.sql   one-time: a low-privilege role + the database
+  schema.sql                  11 tables, 4 enum types, indexes (idempotent)
+  seed.sql                    2 venues, 30-item menu, staff, 4 sample orders
+  menu_images.sql             optional UPDATEs that set menu_item.image_url
+  setup.mjs                   pg-driver loader: schema -> seed -> images
+server/       Express JSON API (also serves the built client in production)
+  src/index.js                app wiring, pg session store, static SPA serving
+  src/db.js                   one pg Pool + a query() helper
+  src/config.js               the active RESTAURANT_ID, the bar-vs-kitchen split
+  src/middleware.js           requireCustomer / requireWaiter guards
+  src/routes/session.js       /api/me, /api/session/*
+  src/routes/menu.js          /api/menu, /api/staff
+  src/routes/orders.js        placing, assigning, serving, complaint, rating, payment, lookup
+client/       Vite + React SPA
+  public/menu/                dish photo files, served at /menu/<file>
+  src/context/    SessionContext (role + identity), CartContext (in-progress order)
+  src/pages/      LandingPage, MenuPage, OrderLookup, OrderTrackingPage, WaiterDashboard
+  src/components/ Header, Logo, RoleToggle, CartButton, CartDrawer, CategorySidebar,
+                  MenuItemCard, TableSelect, WaitCountdown, PrepTeam, StatusBadge,
+                  PretendBadge, Stars, OrderPanels, OrderSummary
+  src/lib/        format (naira / times), categories, tables (1–20)
+render.yaml     Render blueprint (Postgres + web service)
+docs/           this document
 ```
 
 In development `npm run dev` runs the API on `:3000` and the Vite dev server on `:5173`,
@@ -50,7 +59,32 @@ with Vite proxying `/api` to Express. In production `npm run build` compiles the
 to `client/dist` and Express serves it with an SPA fallback, so the whole app is one
 origin.
 
-### 1.3 The data model as finally implemented
+### 1.3 API surface
+
+All JSON, under `/api`. The current role lives in a signed session cookie
+(`express-session` + a Postgres-backed store); there is no login.
+
+| Method & path | Role | Purpose |
+|---|---|---|
+| `GET /api/health` | any | DB round-trip check (Render health check) |
+| `GET /api/me` | any | active role, customer identity, current order, venue |
+| `POST /api/session/customer` | any | create the `customer` row, become a customer |
+| `POST /api/session/role` | any | flip the Customer/Waiter view (keeps identity) |
+| `POST /api/session/switch` | any | full reset — forget identity and current order |
+| `GET /api/menu` | any | available items for the venue (incl. `image_url`) |
+| `GET /api/staff` | waiter | waiter / chef / bartender lists for the dropdowns |
+| `POST /api/orders` | customer | place an order (transaction; price snapshot; wait estimate) |
+| `POST /api/orders/lookup` | any | find an order by name + table, resume the session on it |
+| `GET /api/orders/:id` | any | full order detail (items, staff, payment, complaint, rating) |
+| `GET /api/waiter/orders` | waiter | the board: every order + items, total, payment method, open complaint |
+| `POST /api/orders/:id/assign` | waiter | record waiter/chef/bartender → `preparing`, stamp prep start |
+| `POST /api/orders/:id/serve` | waiter | → `served`, stamp `served_at`, `actual_wait_minutes`, prep end |
+| `POST /api/orders/:id/complaint` | customer | file a complaint against the order |
+| `POST /api/orders/:id/rating` | customer | 1–5 rating + comment (upsert on `order_id`) |
+| `POST /api/orders/:id/pay` | waiter | record a pretend payment (`cash`/`card`/`transfer`) → `paid` |
+| `POST /api/complaints/:id/resolve` | waiter | close a complaint, record `resolved_by_waiter_id` |
+
+### 1.4 The data model as finally implemented
 
 The first assignment's model was graded 92/100. The assessor asked for three additions,
 and building the app forced three more. All six are in `db/schema.sql`:
@@ -67,30 +101,34 @@ and building the app forced three more. All six are in `db/schema.sql`:
 The eleven tables: `restaurant`, `customer`, `menu_item`, `waiter`, `chef`, `bartender`,
 `orders`, `order_item` (the Order↔MenuItem bridge), `payment`, `complaint`, `rating`.
 Four enum types constrain the status columns (`menu_category`, `order_status`,
-`payment_status`, `complaint_status`).
+`payment_status`, `complaint_status`). One more table, `session`, is created at runtime
+by `connect-pg-simple` to hold the role cookie — it is not part of the model.
 
 The seed (`db/seed.sql`) loads two venues, a 30-item Nigerian menu for the active venue,
 the staff lists, and four sample orders whose numbers reconcile: order 1's items total
 ₦16,000 = its payment; order 4's total ₦5,000 = its payment; order 2 is past its 20-minute
 estimate with an open complaint and a 1-star rating.
 
-> Note: the seeded orders carry their original August dates, so if you serve one of them
-> during a demo its "actual wait" is measured from that date. Fresh orders you place
-> yourself show sane wait times.
+> Note: the seeded orders carry their original August dates, so a wait measured against
+> "now" is nonsensically large. The UI hides that (it shows "Running late" / "Served"
+> without the number once past ~6 hours); fresh orders you place yourself show real times.
 
-### 1.4 Deployment
+### 1.5 Deployment
 
 `render.yaml` is a Render blueprint:
 
 - a free **Postgres** instance (`chowly-db`);
-- a free **Node web service** — `buildCommand: npm run build`, `startCommand: npm start`,
-  health check on `/api/health`;
+- a free **Node web service** — `buildCommand: npm run build` (installs both workspaces
+  and builds `client/dist`), `startCommand: npm start`, health check on `/api/health`;
 - `DATABASE_URL` injected from the database, `SESSION_SECRET` generated by Render,
-  `NODE_ENV=production`.
+  `NODE_ENV=production`, `NODE_VERSION=20`.
 
-After the first deploy the schema and seed are loaded once with `node db/setup.mjs`
-(it uses the `pg` driver, so no `psql` binary is needed on the host). Every later push
-redeploys the service; the database keeps its data.
+`server/index.js` sets `trust proxy` and a `secure` session cookie for HTTPS behind
+Render's proxy, and `db.js` enables SSL when `NODE_ENV=production`. After the first
+deploy the schema, seed and menu images are loaded once with `node db/setup.mjs` (it
+uses the `pg` driver, so no `psql` binary is needed on the host). Every later push
+redeploys the service; the database keeps its data. Step-by-step instructions are in
+`README.md`.
 
 ---
 
@@ -102,30 +140,41 @@ The build was done with an AI coding assistant (Claude, via Claude Code).
 - Read the three source documents (the build brief, the original model, the assessment
   feedback) and the three SQL files, then propose a staged plan.
 - Scaffold the repo, write the Express API route by route, and build the React client
-  screen by screen, matching a Figma Make design for the styling.
-- Break the work into a readable sequence of git commits.
+  screen by screen, styled after a Figma Make "fine dining" design.
+- Deliver the work as a readable sequence of git commits, then apply a long run of small
+  follow-up changes (below), each as its own commit.
 
 **What was accepted**
-- The overall shape: `client/` + `server/` split, session-based role switch, the API
-  surface, the Tailwind design tokens taken from the Figma design.
+- The overall shape: `client/` + `server/` split, the session role switch, the API
+  surface, the Tailwind design tokens lifted from the Figma design.
 - The transactional order-placement query, the parallel `max(kitchen, bar)` wait
   estimate, and the `ON CONFLICT (order_id)` rating upsert.
-- The staged commit history.
+- A decision to reset the messy early git history to a clean, staged commit sequence
+  (the pre-reset history is kept on the `archive/pre-rebuild` branch).
+- Later feature requests taken as-is: a welcome landing page; order lookup by name +
+  table; a live MM:SS countdown; the logo linking home; the table picker as a 1–20
+  dropdown; the waiter opening a paid card for a full summary.
 
 **What was rejected or corrected**
 - The first pass had the role toggle **wipe the customer's session** on every switch,
   so a customer who peeked at the waiter view lost their order. Changed so the toggle
   only flips the view and keeps identity + current order; a separate "start a new order"
   action is the explicit reset.
-- The initial `db/setup.mjs` shelled out to `psql`, which is not present in a Render
-  shell. Rewritten to run the `.sql` files through the `pg` driver (stripping the
-  `psql`-only `\echo` / `\gexec` lines).
+- `db/setup.mjs` first shelled out to `psql`, which a Render shell does not have.
+  Rewritten to run the `.sql` files through the `pg` driver (stripping the `psql`-only
+  `\echo` / `\gexec` lines).
 - The off-canvas cart drawer widened the page (horizontal scroll) until `overflow-x`
-  was clipped on the body, and the item table had to be made to scroll inside its card
-  on mobile.
-- The three SQL files were kept **exactly as provided** — the assistant proposed adding
-  an `image_url` column for food photos and that was declined; the cards use a
-  category-tinted band instead.
+  was clipped on the body; the order item table had to be made to scroll inside its
+  card on mobile.
+- Payment was first allowed from either role. Corrected to **waiter-only**, with the
+  waiter choosing the method the guest used.
+- The seed's historical dates made "actual wait" read as hundreds of hours; the UI now
+  suppresses the number past ~6 hours.
+- `image_url` on `menu_item` was initially left out to keep the SQL files untouched;
+  when photos were wanted it was added to `schema.sql`, with the actual URLs kept in a
+  separate `db/menu_images.sql` so the seed file stays close to what was supplied.
+- Small UX fixes on request: reloading the menu no longer bounces to the welcome page;
+  the "back to your order" button was removed from the welcome page.
 
 ---
 
@@ -164,18 +213,23 @@ survives a page refresh.
 
 A customer who has lost their session (closed the tab, or is on another device) can get
 back to this screen from the welcome page — **"Already ordered? Check your order status"**
-asks for the **name and table number** used on the order and reopens its tracking screen.
+asks for the **name and table** used on the order (case-insensitive match on the most
+recent one) and reopens its tracking screen.
 
 ### Order assignment
-Switching to **Waiter** shows the order board, newest and most urgent first. Every card
-lists the ordered items with their subtotals and the order total. A **paid** card is
-collapsible — opening it shows the full order summary: placed / served / paid times, the
-prep team, the itemised bill, the **payment (amount, method, time)** with the pretend
-badge, and any complaint and rating. A pending order has three dropdowns — **waiter,
-chef, bartender** — filled from the seeded staff lists. **Confirm assignment** records the three on the order, moves it to `preparing`,
-and stamps `prep_start_time` on every item. A preparing order shows the assigned team and
-a **Mark served** button, which sets `status = 'served'`, `served_at`, the
+Switching to **Waiter** shows the order board, sorted `pending → preparing → served →
+paid`. Every card lists the ordered items with their subtotals and the order total.
+
+A **pending** order has three dropdowns — **waiter, chef, bartender** — filled from the
+seeded staff lists. **Confirm assignment** records the three on the order, moves it to
+`preparing`, and stamps `prep_start_time` on every item. A **preparing** order shows the
+assigned team and a **Mark served** button, which sets `status = 'served'`, `served_at`,
 `actual_wait_minutes`, and `prep_end_time` on every item.
+
+A **paid** card is collapsible: opening it fetches the full order and shows a summary —
+placed / served / paid times, the prep team, the itemised bill, the **payment (amount,
+method, time)** with the pretend badge, and any complaint (with its resolution) and
+rating.
 
 ### Complaint and rating
 While an order is active the customer sees a **"Taking too long?"** box. Submitting it

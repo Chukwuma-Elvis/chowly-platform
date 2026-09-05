@@ -65,27 +65,41 @@ npm run build                 # builds client/dist, installs server deps
 NODE_ENV=production npm start  # Express serves the API + the SPA on :3000
 ```
 
+## Push to GitHub
+
+```bash
+git remote add origin https://github.com/<you>/<repo>.git
+git push -u origin main
+```
+
+(Create the empty repo on GitHub first — no README/licence, so the histories don't
+diverge.) The build has no secrets in it; `server/.env` is git-ignored.
+
 ## Deploy to Render
 
 The repo ships a `render.yaml` blueprint: one free Postgres instance plus one Node
 web service that builds `client/` and serves it alongside the API.
 
-1. Push this repo to GitHub.
-2. Render dashboard → **New +** → **Blueprint** → pick the repo. Render reads
-   `render.yaml` and creates `chowly-db` and the `chowly` web service.
-   `DATABASE_URL` is wired from the database and `SESSION_SECRET` is generated.
-3. When the first deploy is green, load the schema and seed **once**. Either:
-   - open the web service **Shell** in Render and run
-     ```bash
-     node db/setup.mjs
-     ```
-     (the service already has `DATABASE_URL` in its environment), **or**
-   - copy the database's *External Connection String* from Render and run it
-     locally:
-     ```bash
-     DATABASE_URL="postgres://…external…" node db/setup.mjs
-     ```
-4. Open the service URL. Use the **Customer / Waiter** switch to move between roles.
+1. **Blueprint.** Render dashboard → **New +** → **Blueprint** → connect the GitHub
+   repo. Render reads `render.yaml` and creates the `chowly-db` database and the
+   `chowly` web service. `DATABASE_URL` is wired from the database, `SESSION_SECRET`
+   is generated, `NODE_ENV=production`. Click **Apply** and wait for the first deploy.
+2. **Load the database — once.** When the deploy is green, open the `chowly` service
+   → **Shell** tab and run:
+   ```bash
+   node db/setup.mjs
+   ```
+   That applies `schema.sql`, `seed.sql` and `menu_images.sql` (it uses the `pg`
+   driver, so no `psql` is needed). Re-run any time to reset the data.
+   *(Alternative: copy the database's External Connection String from Render and run
+   `DATABASE_URL="postgres://…" node db/setup.mjs` from your machine.)*
+3. **Open the service URL.** Use the **Customer / Waiter** switch to move between roles.
 
-Redeploys happen automatically on every push to the default branch; the database
-keeps its data across them.
+Every later `git push` to `main` redeploys automatically; the database keeps its data.
+On the free tier the web service sleeps after ~15 min idle — the first request after
+that takes ~30–60 s to wake.
+
+### Updating menu photos after deploy
+
+`client/public/menu/*` files ship in the build automatically. After changing
+`db/menu_images.sql`, re-run `node db/setup.mjs --images` in the Render Shell.
