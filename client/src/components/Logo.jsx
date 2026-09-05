@@ -10,8 +10,8 @@ export default function Logo() {
         <path d="M16 19v6" stroke="#C0563B" strokeWidth="1.5" strokeLinecap="round" />
       </svg>
       <div className="leading-none">
-        <div className="font-serif text-lg font-semibold tracking-[0.2em] text-ink">CHOWLY</div>
-        <div className="text-[10px] uppercase tracking-[0.3em] text-muted">Fine Dining</div>
+        <div className="font-serif text-base font-semibold tracking-[0.2em] text-ink sm:text-lg">CHOWLY</div>
+        <div className="hidden text-[10px] uppercase tracking-[0.3em] text-muted sm:block">Fine Dining</div>
       </div>
     </div>
   );

@@ -4,7 +4,7 @@ import RoleToggle from './RoleToggle.jsx';
 export default function Header({ restaurant, tableNumber, role, onRoleChange, right }) {
   return (
     <header className="sticky top-0 z-20 border-b border-sand bg-cream/90 backdrop-blur">
-      <div className="mx-auto flex max-w-6xl items-center justify-between gap-4 px-5 py-3">
+      <div className="mx-auto flex max-w-6xl items-center justify-between gap-2 px-4 py-3 sm:gap-4 sm:px-5">
         <Logo />
 
         <div className="hidden text-center sm:block">
@@ -14,7 +14,7 @@ export default function Header({ restaurant, tableNumber, role, onRoleChange, ri
           </div>
         </div>
 
-        <div className="flex items-center gap-3">
+        <div className="flex shrink-0 items-center gap-2 sm:gap-3">
           <RoleToggle value={role} onChange={onRoleChange} />
           {right}
         </div>

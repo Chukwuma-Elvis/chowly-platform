@@ -49,8 +49,8 @@ export default function OrderTrackingPage({ orderId, onNewOrder }) {
 
       <WaitCountdown order={order} />
 
-      <div className="card overflow-hidden">
-        <table className="w-full text-sm">
+      <div className="card overflow-x-auto">
+        <table className="w-full min-w-[28rem] text-sm">
           <thead className="bg-cream text-left text-xs uppercase tracking-wide text-muted">
             <tr>
               <th className="px-4 py-2 font-medium">Item</th>

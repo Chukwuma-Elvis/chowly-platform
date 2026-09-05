@@ -5,6 +5,7 @@
 @layer base {
   body {
     @apply bg-cream text-ink font-sans antialiased;
+    overflow-x: hidden; /* the off-canvas cart drawer must not widen the page */
   }
   h1, h2, h3 {
     @apply font-serif;
