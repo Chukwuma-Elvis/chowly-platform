@@ -1,39 +1,59 @@
 import { useEffect, useState } from 'react';
 import { minutesLabel, clockTime } from '../lib/format.js';
 
-// Shows the estimated wait, and - while the order is still active - a live
-// "expected ready around HH:MM" that turns into "running late" once the
-// estimate is blown. After serving it shows the actual wait instead.
+// While the order is active, a live countdown to the estimated ready time.
+// Once the estimate is blown it flips to "running late"; after serving it
+// shows the actual wait.
 export default function WaitCountdown({ order }) {
-  const [, tick] = useState(0);
+  const [now, setNow] = useState(() => Date.now());
   useEffect(() => {
-    const t = setInterval(() => tick((n) => n + 1), 1000 * 15);
+    const t = setInterval(() => setNow(Date.now()), 1000);
     return () => clearInterval(t);
   }, []);
 
   const active = order.status === 'pending' || order.status === 'preparing';
-  const placed = new Date(order.order_datetime);
-  const expectedReady = new Date(placed.getTime() + order.estimated_wait_minutes * 60000);
-  const late = active && Date.now() > expectedReady.getTime();
-  const minsLate = Math.round((Date.now() - expectedReady.getTime()) / 60000);
+  const placed = new Date(order.order_datetime).getTime();
+  const expectedReady = placed + order.estimated_wait_minutes * 60000;
+  const remainingMs = expectedReady - now;
+  const late = active && remainingMs <= 0;
+  const minsLate = Math.round(-remainingMs / 60000);
+
+  let big;
+  let sub;
+  if (active && !late) {
+    const totalSec = Math.max(0, Math.floor(remainingMs / 1000));
+    const mm = Math.floor(totalSec / 60);
+    const ss = totalSec % 60;
+    big = `${mm}:${String(ss).padStart(2, '0')}`;
+    sub = `Expected ready around ${clockTime(expectedReady)} · estimate ${minutesLabel(order.estimated_wait_minutes)}`;
+  } else if (active && late) {
+    big = 'Running late';
+    sub =
+      minsLate < 180
+        ? `About ${minsLate} min past the ${minutesLabel(order.estimated_wait_minutes)} estimate`
+        : `Past the ${minutesLabel(order.estimated_wait_minutes)} estimate`;
+  } else if (order.actual_wait_minutes != null) {
+    big = `Served in ${minutesLabel(order.actual_wait_minutes)}`;
+    sub =
+      order.actual_wait_minutes > order.estimated_wait_minutes
+        ? `Longer than the ${minutesLabel(order.estimated_wait_minutes)} estimate`
+        : `Within the ${minutesLabel(order.estimated_wait_minutes)} estimate`;
+  } else {
+    big = minutesLabel(order.estimated_wait_minutes);
+    sub = null;
+  }
 
   return (
     <div className="card p-4">
-      <div className="text-xs uppercase tracking-wide text-muted">Estimated wait</div>
-      <div className="mt-0.5 text-2xl text-ink">{minutesLabel(order.estimated_wait_minutes)}</div>
-
-      {active ? (
-        <div className={`mt-1 text-sm ${late ? 'text-clay-dark' : 'text-muted'}`}>
-          {late
-            ? `Running late — about ${minsLate} min past the estimate`
-            : `Expected ready around ${clockTime(expectedReady)}`}
-        </div>
-      ) : order.actual_wait_minutes != null ? (
-        <div className="mt-1 text-sm text-muted">
-          Served in {minutesLabel(order.actual_wait_minutes)}
-          {order.actual_wait_minutes > order.estimated_wait_minutes ? ' — longer than estimated' : ''}
-        </div>
-      ) : null}
+      <div className="text-xs uppercase tracking-wide text-muted">
+        {active && !late ? 'Time remaining' : 'Estimated wait'}
+      </div>
+      <div
+        className={`mt-0.5 font-serif text-3xl tabular-nums ${late ? 'text-clay-dark' : 'text-ink'}`}
+      >
+        {big}
+      </div>
+      {sub && <div className={`mt-1 text-sm ${late ? 'text-clay-dark' : 'text-muted'}`}>{sub}</div>}
     </div>
   );
 }

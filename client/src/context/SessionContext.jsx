@@ -34,6 +34,11 @@ export function SessionProvider({ children }) {
       await api('/session/switch', { method: 'POST' });
       await refresh();
     },
+    async lookupOrder(payload) {
+      const { orderId } = await api('/orders/lookup', { method: 'POST', body: payload });
+      await refresh();
+      return orderId;
+    },
     setCurrentOrder(id) {
       setMe((m) => (m ? { ...m, currentOrderId: id } : m));
     },

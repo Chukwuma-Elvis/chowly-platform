@@ -130,6 +130,46 @@ router.post('/orders', requireCustomer, async (req, res, next) => {
 });
 
 // ---------------------------------------------------------------------------
+//  Customer: look up an existing order by name + table number
+//  (for someone who lost their session or is on another device). Must be
+//  defined before "/orders/:id" so "lookup" is not read as an id.
+// ---------------------------------------------------------------------------
+router.post('/orders/lookup', async (req, res, next) => {
+  try {
+    const name = (req.body.name || '').trim();
+    const tableNumber = (req.body.tableNumber || '').trim();
+    if (!name || !tableNumber) {
+      return res.status(400).json({ error: 'Enter the name and table number used for the order.' });
+    }
+
+    const { rows } = await query(
+      `SELECT o.id, o.customer_id
+       FROM   orders o
+       JOIN   customer c ON c.id = o.customer_id
+       WHERE  o.restaurant_id = $1
+         AND  lower(c.name) = lower($2)
+         AND  lower(o.table_number) = lower($3)
+       ORDER  BY o.order_datetime DESC
+       LIMIT  1`,
+      [RESTAURANT_ID, name, tableNumber],
+    );
+    if (rows.length === 0) {
+      return res.status(404).json({ error: 'No order found for that name and table number.' });
+    }
+
+    // Resume as that customer so they can also complain / rate / pay.
+    req.session.role = 'customer';
+    req.session.customerId = rows[0].customer_id;
+    req.session.customerName = name;
+    req.session.tableNumber = tableNumber;
+    req.session.currentOrderId = rows[0].id;
+    res.json({ orderId: rows[0].id });
+  } catch (err) {
+    next(err);
+  }
+});
+
+// ---------------------------------------------------------------------------
 //  Order detail (either role - the customer polls it, the waiter opens it)
 // ---------------------------------------------------------------------------
 router.get('/orders/:id', async (req, res, next) => {

@@ -152,10 +152,15 @@ lists the lines with quantity steppers and a running total. **Continue** asks fo
 3. sets the order's **estimated wait** to `max(sum of kitchen prep times, sum of bar
    prep times)` — the kitchen and bar work in parallel.
 
-The customer lands on the **order tracking** screen: status, the estimated wait with a
-live "expected ready around HH:MM" (which becomes "running late" once the estimate is
-passed), the itemised list with the total, and "who's handling this" (empty until a
-waiter picks it up). The screen polls every 5 seconds and survives a page refresh.
+The customer lands on the **order tracking** screen: status, a live **MM:SS countdown**
+to the estimated ready time (which flips to "running late" once the estimate is passed,
+then to "served in N min" afterwards), the itemised list with the total, and "who's
+handling this" (empty until a waiter picks it up). The screen polls every 5 seconds and
+survives a page refresh.
+
+A customer who has lost their session (closed the tab, or is on another device) can get
+back to this screen from the welcome page — **"Already ordered? Check your order status"**
+asks for the **name and table number** used on the order and reopens its tracking screen.
 
 ### Order assignment
 Switching to **Waiter** shows the order board, newest and most urgent first. A pending

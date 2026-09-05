@@ -5,6 +5,7 @@ import CartButton from './components/CartButton.jsx';
 import CartDrawer from './components/CartDrawer.jsx';
 import LandingPage from './pages/LandingPage.jsx';
 import MenuPage from './pages/MenuPage.jsx';
+import OrderLookup from './pages/OrderLookup.jsx';
 import OrderTrackingPage from './pages/OrderTrackingPage.jsx';
 import WaiterDashboard from './pages/WaiterDashboard.jsx';
 
@@ -12,7 +13,7 @@ export default function App() {
   const { me, error, setRole, resetVisit, setCurrentOrder } = useSession();
   const [cartOpen, setCartOpen] = useState(false);
   const [entered, setEntered] = useState(false);
-  const [view, setView] = useState('landing'); // 'landing' | 'menu' | 'order' | 'waiter'
+  const [view, setView] = useState('landing'); // 'landing' | 'lookup' | 'menu' | 'order' | 'waiter'
 
   // Keep the view in step with the session (e.g. after a refresh mid-order).
   useEffect(() => {
@@ -48,7 +49,7 @@ export default function App() {
         role={role}
         onRoleChange={onRoleChange}
         right={
-          role === 'customer' && view !== 'landing'
+          role === 'customer' && (view === 'menu' || view === 'order')
             ? <CartButton onClick={() => setCartOpen(true)} />
             : null
         }
@@ -61,6 +62,13 @@ export default function App() {
             restaurant={me.restaurant}
             tableNumber={me.tableNumber}
             onEnter={() => { setEntered(true); setView('menu'); }}
+            onCheckOrder={() => setView('lookup')}
+          />
+        )}
+        {role === 'customer' && view === 'lookup' && (
+          <OrderLookup
+            onFound={(orderId) => { setCurrentOrder(orderId); setView('order'); }}
+            onBack={() => setView('landing')}
           />
         )}
         {role === 'customer' && view === 'menu' && <MenuPage />}
