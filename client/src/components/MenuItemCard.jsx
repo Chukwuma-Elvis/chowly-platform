@@ -1,17 +1,34 @@
+import { useState } from 'react';
 import { naira, minutesLabel } from '../lib/format.js';
 import { CATEGORY_BAND, CATEGORY_LABEL } from '../lib/categories.js';
 
 export default function MenuItemCard({ item, qty, onAdd, onRemove }) {
+  const [imgOk, setImgOk] = useState(true);
+  const showImage = item.image_url && imgOk;
+
   return (
     <article className="card flex flex-col overflow-hidden">
-      <div className={`relative h-28 ${CATEGORY_BAND[item.category] || 'bg-sand'}`}>
+      <div className={`relative h-28 ${showImage ? 'bg-sand' : CATEGORY_BAND[item.category] || 'bg-sand'}`}>
+        {showImage && (
+          <img
+            src={item.image_url}
+            alt={item.name}
+            loading="lazy"
+            onError={() => setImgOk(false)}
+            className="absolute inset-0 h-full w-full object-cover"
+          />
+        )}
         <span className="absolute left-3 top-3 rounded-full bg-ink/80 px-2.5 py-1 text-xs font-medium text-white">
           {minutesLabel(item.avg_prep_minutes)}
         </span>
         <span className="absolute bottom-3 right-3 rounded-full bg-white/90 px-2.5 py-1 text-sm font-semibold text-ink">
           {naira(item.price_naira)}
         </span>
-        <span className="absolute bottom-3 left-3 text-[11px] uppercase tracking-[0.18em] text-ink/50">
+        <span
+          className={`absolute bottom-3 left-3 text-[11px] uppercase tracking-[0.18em] ${
+            showImage ? 'text-white drop-shadow' : 'text-ink/50'
+          }`}
+        >
           {CATEGORY_LABEL[item.category]}
         </span>
       </div>

@@ -1,8 +1,9 @@
-// Loads db/schema.sql then db/seed.sql into the database.
+// Loads db/schema.sql then db/seed.sql (then db/menu_images.sql if present).
 //
-//   node db/setup.mjs            # schema + seed
+//   node db/setup.mjs            # schema + seed + menu images
 //   node db/setup.mjs --schema   # only schema.sql
 //   node db/setup.mjs --seed     # only seed.sql
+//   node db/setup.mjs --images   # only menu_images.sql
 //
 // Uses the `pg` driver (no external `psql` needed), so it runs the same on a
 // laptop and in a hosted shell. Reads DATABASE_URL from the shell or server/.env.
@@ -32,8 +33,14 @@ if (!connectionString) {
 }
 
 const only = process.argv[2];
-const files =
-  only === '--seed' ? ['seed.sql'] : only === '--schema' ? ['schema.sql'] : ['schema.sql', 'seed.sql'];
+let files;
+if (only === '--seed') files = ['seed.sql'];
+else if (only === '--schema') files = ['schema.sql'];
+else if (only === '--images') files = ['menu_images.sql'];
+else files = ['schema.sql', 'seed.sql', 'menu_images.sql'];
+
+// menu_images.sql is optional - skip it silently if it was deleted.
+files = files.filter((f) => f !== 'menu_images.sql' || existsSync(join(here, f)));
 
 function stripMetaCommands(sql) {
   return sql

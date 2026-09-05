@@ -10,7 +10,7 @@ const router = express.Router();
 router.get('/menu', async (req, res, next) => {
   try {
     const { rows } = await query(
-      `SELECT id, name, category, description,
+      `SELECT id, name, category, description, image_url,
               price_naira::float8   AS price_naira,
               avg_prep_minutes
        FROM   menu_item

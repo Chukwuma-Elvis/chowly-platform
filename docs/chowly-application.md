@@ -53,7 +53,7 @@ origin.
 ### 1.3 The data model as finally implemented
 
 The first assignment's model was graded 92/100. The assessor asked for three additions,
-and building the app forced two more. All five are in `db/schema.sql`:
+and building the app forced three more. All six are in `db/schema.sql`:
 
 | # | Change | Reason |
 |---|--------|--------|
@@ -62,6 +62,7 @@ and building the app forced two more. All five are in `db/schema.sql`:
 | 3 | **`received_by_waiter_id`** on `payment`, **`resolved_by_waiter_id`** on `complaint`. | Feedback: the staff side of payment and complaint resolution should be traceable. |
 | 4 | **`table_number` moved** from `customer` to `orders`. | A table belongs to a single visit, not permanently to a person. |
 | 5 | **`unit_price_naira` snapshot** on `order_item` (with `subtotal_naira` a generated column). | Historical order totals must not move when a menu price is later edited. |
+| 6 | Nullable **`image_url`** on `menu_item`. | The menu card shows a dish photo when set, and a category-tinted band when not. Photos are populated separately in `db/menu_images.sql`. |
 
 The eleven tables: `restaurant`, `customer`, `menu_item`, `waiter`, `chef`, `bartender`,
 `orders`, `order_item` (the Order↔MenuItem bridge), `payment`, `complaint`, `rating`.
@@ -140,7 +141,8 @@ their tracking screen, and the waiter view skips it entirely.
 **View the menu** opens the menu for the active venue — every available item, with a
 `BROWSE` sidebar listing **All** and the five categories (Starters, Main Courses, Sides,
 Desserts, Drinks) with a live count each. Each card shows the preparation time, the price
-in naira, the name and a short description. No identity is needed to browse.
+in naira, the name, a short description, and a dish photo where one is set (a
+category-tinted band otherwise). No identity is needed to browse.
 
 ### Order placement
 `+ Add to Order` puts an item in the cart (the header shows the count). Opening the cart

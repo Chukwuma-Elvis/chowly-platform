@@ -42,7 +42,7 @@ npm install
 npm --prefix server install
 npm --prefix client install
 
-# 4. load schema + seed data
+# 4. load schema + seed data (also applies db/menu_images.sql)
 npm run db:setup
 
 # 5. start API (:3000) and Vite dev server (:5173) together
@@ -51,6 +51,12 @@ npm run dev
 
 Open http://localhost:5173. Use the **Customer / Waiter** switch in the header to move
 between the two roles - no login required.
+
+### Menu photos
+
+`menu_item.image_url` is optional; a card without one shows a category-tinted band.
+To add photos, edit `db/menu_images.sql` (either `/menu/<file>.jpg` paths for files you
+drop in `client/public/menu/`, or full image URLs) and run `npm run db:images`.
 
 ## Production build
 

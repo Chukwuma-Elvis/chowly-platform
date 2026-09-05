@@ -80,7 +80,8 @@ CREATE TABLE customer (
 -- ----------------------------------------------------------------------------
 --  3. MENU_ITEM
 --     Food and drink items. is_available lets a waiter hide a sold-out dish
---     without deleting its history.
+--     without deleting its history. image_url is optional - the card falls
+--     back to a category-tinted band when it is NULL (see db/menu_images.sql).
 -- ----------------------------------------------------------------------------
 CREATE TABLE menu_item (
     id                SERIAL PRIMARY KEY,
@@ -91,6 +92,7 @@ CREATE TABLE menu_item (
     price_naira       NUMERIC(10,2) NOT NULL CHECK (price_naira >= 0),
     avg_prep_minutes  INTEGER       NOT NULL CHECK (avg_prep_minutes >= 0),
     is_available      BOOLEAN       NOT NULL DEFAULT TRUE,
+    image_url         TEXT,
     created_at        TIMESTAMPTZ   NOT NULL DEFAULT now()
 );
 
