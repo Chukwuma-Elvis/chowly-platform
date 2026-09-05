@@ -163,9 +163,9 @@ back to this screen from the welcome page — **"Already ordered? Check your ord
 asks for the **name and table number** used on the order and reopens its tracking screen.
 
 ### Order assignment
-Switching to **Waiter** shows the order board, newest and most urgent first. A pending
-order has three dropdowns — **waiter, chef, bartender** — filled from the seeded staff
-lists. **Confirm assignment** records the three on the order, moves it to `preparing`,
+Switching to **Waiter** shows the order board, newest and most urgent first. Every card
+lists the ordered items with their subtotals and the order total. A pending order has
+three dropdowns — **waiter, chef, bartender** — filled from the seeded staff lists. **Confirm assignment** records the three on the order, moves it to `preparing`,
 and stamps `prep_start_time` on every item. A preparing order shows the assigned team and
 a **Mark served** button, which sets `status = 'served'`, `served_at`, the
 `actual_wait_minutes`, and `prep_end_time` on every item.
@@ -179,11 +179,12 @@ is served (or paid) the customer can leave a **1–5 star rating** with an optio
 re-rating replaces the previous one.
 
 ### Payment
-On a served order the customer sees **"Pay now (simulated)"**. It inserts a `payment` row
-(`is_pretend = TRUE`, amount taken from the item subtotals, `received_by_waiter_id` = the
-order's waiter) and moves the order to `paid`. The screen then shows a paid card with a
-clear **"PRETEND PAYMENT — NO REAL MONEY MOVED"** badge. The waiter's board can also take
-the payment ("Take payment (simulated)") for a customer who has already left the table.
+Payment is taken by the **waiter** on the served order — the customer's screen only shows
+the total and a note that the waiter will collect it. On the board the waiter picks the
+method the guest used (**cash / card / transfer**) and confirms; that inserts a `payment`
+row (`is_pretend = TRUE`, amount from the item subtotals, `received_by_waiter_id` = the
+order's waiter, `method` = the chosen one) and moves the order to `paid`. Both screens
+then show the paid amount with a clear **"PRETEND PAYMENT — NO REAL MONEY MOVED"** badge.
 
 Everything above is stored in PostgreSQL — refreshing any screen reloads the same state.
 
@@ -196,14 +197,14 @@ Everything above is stored in PostgreSQL — refreshing any screen reloads the s
 3. **Order.** Add a few items, open the cart (top-right), **Continue**, enter a table
    number like `T05`, **Place order**. You are now on the tracking screen with a wait
    estimate.
-4. **Be the waiter.** Click **Waiter** in the header. Find your order (it is `pending`),
-   pick a waiter, chef and bartender, **Confirm assignment**. The order is now
-   `preparing`. Click **Mark served**.
-5. **Back to the customer.** Click **Customer** — your order is still there, now
-   `served`. (Optional: before serving, use "Taking too long?" to file a complaint, then
-   resolve it from the waiter board.)
-6. **Pay.** Click **Pay now (simulated)**. The order shows as paid with the pretend-payment
-   badge.
+4. **Be the waiter.** Click **Waiter** in the header. Each order card lists its items.
+   Find your order (it is `pending`), pick a waiter, chef and bartender, **Confirm
+   assignment**. The order is now `preparing`. Click **Mark served**.
+5. **Take payment (waiter).** On the served order pick how the guest paid — **Cash /
+   Card / Transfer** — and click **Take … payment**. The order is now `paid`.
+6. **Back to the customer.** Click **Customer** — the order shows as paid with the
+   pretend-payment badge. (Optional: before serving, use "Taking too long?" to file a
+   complaint, then resolve it from the waiter board.)
 7. **Rate.** Leave a star rating and a comment.
 8. **Start over.** "Start a new order" clears the visit so the next person can begin fresh.
 

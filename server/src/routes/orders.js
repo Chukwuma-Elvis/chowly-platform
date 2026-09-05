@@ -197,6 +197,7 @@ router.get('/waiter/orders', requireWaiter, async (req, res, next) => {
               ch.name AS chef_name,
               b.name  AS bartender_name,
               COALESCE(t.total, 0)::float8 AS total,
+              COALESCE(it.items, '[]'::json) AS items,
               COALESCE(cp.open_complaints, 0)::int AS open_complaints,
               cp.open_complaint_id,
               cp.open_complaint_text
@@ -209,6 +210,18 @@ router.get('/waiter/orders', requireWaiter, async (req, res, next) => {
                SELECT SUM(oi.subtotal_naira) AS total
                FROM order_item oi WHERE oi.order_id = o.id
              ) t ON TRUE
+       LEFT   JOIN LATERAL (
+               SELECT json_agg(json_build_object(
+                        'name', mi.name,
+                        'category', mi.category,
+                        'quantity', oi.quantity,
+                        'unit_price_naira', oi.unit_price_naira::float8,
+                        'subtotal_naira', oi.subtotal_naira::float8
+                      ) ORDER BY mi.category, mi.name) AS items
+               FROM order_item oi
+               JOIN menu_item mi ON mi.id = oi.menu_item_id
+               WHERE oi.order_id = o.id
+             ) it ON TRUE
        LEFT   JOIN LATERAL (
                SELECT COUNT(*) FILTER (WHERE cc.resolution_status = 'open') AS open_complaints,
                       (ARRAY_AGG(cc.id ORDER BY cc.submitted_at DESC)
@@ -370,16 +383,18 @@ router.post('/orders/:id/rating', requireCustomer, async (req, res, next) => {
 
 // ---------------------------------------------------------------------------
 //  Payment - a PRETEND payment, recorded and clearly flagged as such.
-//  Either role can take it (the customer pays, or the waiter rings it in).
+//  Only the waiter takes payment, and picks the method the guest used.
 // ---------------------------------------------------------------------------
-router.post('/orders/:id/pay', async (req, res, next) => {
-  if (!['customer', 'waiter'].includes(req.session?.role)) {
-    return res.status(401).json({ error: 'Switch to the customer or waiter view first.' });
-  }
+export const PAYMENT_METHODS = ['cash', 'card', 'transfer'];
+
+router.post('/orders/:id/pay', requireWaiter, async (req, res, next) => {
   const client = await pool.connect();
   try {
     const orderId = parseInt(req.params.id, 10);
-    const method = (req.body.method || 'cash').trim();
+    const method = (req.body.method || '').trim().toLowerCase();
+    if (!PAYMENT_METHODS.includes(method)) {
+      return res.status(400).json({ error: `Pick a payment method: ${PAYMENT_METHODS.join(', ')}.` });
+    }
 
     await client.query('BEGIN');
     const { rows: [order] } = await client.query(

@@ -83,7 +83,7 @@ export default function OrderTrackingPage({ orderId, onNewOrder }) {
 
       <PrepTeam order={order} />
 
-      <PaymentPanel detail={detail} total={total} onChange={load} />
+      <PaymentPanel detail={detail} total={total} />
       <ComplaintPanel detail={detail} onChange={load} />
       <RatingPanel detail={detail} onChange={load} />
 

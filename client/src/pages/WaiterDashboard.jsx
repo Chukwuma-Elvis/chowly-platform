@@ -3,6 +3,8 @@ import { api } from '../api.js';
 import { naira, minutesLabel } from '../lib/format.js';
 import StatusBadge from '../components/StatusBadge.jsx';
 
+const PAYMENT_METHODS = ['cash', 'card', 'transfer'];
+
 export default function WaiterDashboard() {
   const [orders, setOrders] = useState([]);
   const [staff, setStaff] = useState({ waiters: [], chefs: [], bartenders: [] });
@@ -42,6 +44,7 @@ export default function WaiterDashboard() {
 
 function OrderRow({ order: o, staff, onChange }) {
   const [assign, setAssign] = useState({ waiterId: '', chefId: '', bartenderId: '' });
+  const [method, setMethod] = useState('cash');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState(null);
 
@@ -79,6 +82,21 @@ function OrderRow({ order: o, staff, onChange }) {
         {naira(o.total)} · est. {minutesLabel(o.estimated_wait_minutes)}
         {o.actual_wait_minutes != null && ` · served in ${minutesLabel(o.actual_wait_minutes)}`}
       </div>
+
+      <ul className="mt-3 space-y-1 rounded-lg bg-cream/70 p-3 text-sm">
+        {(o.items || []).map((it, i) => (
+          <li key={i} className="flex justify-between gap-3">
+            <span className="text-ink">
+              <span className="font-medium">{it.quantity}×</span> {it.name}
+            </span>
+            <span className="text-muted">{naira(it.subtotal_naira)}</span>
+          </li>
+        ))}
+        <li className="flex justify-between gap-3 border-t border-sand pt-1 font-medium">
+          <span>Total</span>
+          <span>{naira(o.total)}</span>
+        </li>
+      </ul>
 
       {o.open_complaints > 0 && o.open_complaint_text && (
         <div className="mt-3 rounded-lg border border-clay-soft bg-clay-tint p-3 text-sm">
@@ -123,11 +141,35 @@ function OrderRow({ order: o, staff, onChange }) {
       )}
 
       {o.status === 'served' && (
-        <div className="mt-3 flex flex-wrap items-center justify-between gap-2 border-t border-sand pt-3 text-sm text-muted">
-          <span>Waiter {o.waiter_name} · Chef {o.chef_name} · Bartender {o.bartender_name}</span>
-          <button className="btn-ghost" disabled={busy} onClick={() => call(`/orders/${o.id}/pay`, { method: 'cash' })}>
-            Take payment (simulated)
-          </button>
+        <div className="mt-3 border-t border-sand pt-3 text-sm text-muted">
+          <div>Waiter {o.waiter_name} · Chef {o.chef_name} · Bartender {o.bartender_name}</div>
+          <div className="mt-3 flex flex-wrap items-center gap-3">
+            <span className="text-xs uppercase tracking-wide text-muted">Paid by</span>
+            <div className="inline-flex rounded-lg border border-sand bg-cream p-0.5">
+              {PAYMENT_METHODS.map((m) => (
+                <button
+                  key={m}
+                  type="button"
+                  onClick={() => setMethod(m)}
+                  className={`rounded-md px-3 py-1 text-sm font-medium capitalize transition ${
+                    method === m ? 'bg-white text-ink shadow-sm' : 'text-muted hover:text-ink'
+                  }`}
+                >
+                  {m}
+                </button>
+              ))}
+            </div>
+            <button
+              className="btn-primary"
+              disabled={busy}
+              onClick={() => call(`/orders/${o.id}/pay`, { method })}
+            >
+              {busy ? 'Recording…' : `Take ${naira(o.total)} payment`}
+            </button>
+          </div>
+          <p className="mt-2 text-xs text-muted">
+            Records a pretend payment against the order and marks it paid — no real money moves.
+          </p>
         </div>
       )}
 

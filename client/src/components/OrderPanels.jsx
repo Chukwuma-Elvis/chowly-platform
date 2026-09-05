@@ -125,17 +125,16 @@ export function RatingPanel({ detail, onChange }) {
   );
 }
 
-export function PaymentPanel({ detail, total, onChange }) {
+// Customer-side: payment is taken by the waiter, so this panel only reports.
+export function PaymentPanel({ detail, total }) {
   const { order, payment } = detail;
-  const [busy, setBusy] = useState(false);
-  const [error, setError] = useState(null);
 
   if (payment) {
     return (
       <div className="card flex flex-wrap items-center justify-between gap-3 p-4">
         <div>
           <div className="font-semibold text-emerald-700">Paid {naira(payment.amount_naira)}</div>
-          <div className="text-xs text-muted">
+          <div className="text-xs capitalize text-muted">
             {payment.method} · {clockTime(payment.paid_at)}
           </div>
         </div>
@@ -146,32 +145,10 @@ export function PaymentPanel({ detail, total, onChange }) {
 
   if (order.status !== 'served') return null;
 
-  async function pay() {
-    setBusy(true);
-    setError(null);
-    try {
-      await api(`/orders/${order.id}/pay`, { method: 'POST', body: { method: 'cash' } });
-      onChange();
-    } catch (err) {
-      setError(err.message);
-    } finally {
-      setBusy(false);
-    }
-  }
-
   return (
-    <div className="card p-4">
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <div className="text-sm text-ink">Ready to pay {naira(total)} before you leave?</div>
-        <button className="btn-primary" onClick={pay} disabled={busy}>
-          {busy ? 'Recording…' : 'Pay now (simulated)'}
-        </button>
-      </div>
-      <p className="mt-2 text-xs text-muted">
-        This records a payment against the order and marks it paid. It is a pretend
-        payment — no real money moves.
-      </p>
-      {error && <p className="mt-2 text-sm text-red-700">{error}</p>}
+    <div className="card p-4 text-sm text-ink">
+      Your order comes to <span className="font-semibold">{naira(total)}</span>. Your waiter
+      will take payment at the table before you leave.
     </div>
   );
 }
