@@ -8,6 +8,7 @@ import { fileURLToPath } from 'node:url';
 import { existsSync } from 'node:fs';
 
 import { pool, query } from './db.js';
+import { bootstrapDatabase } from './bootstrap.js';
 import sessionRoutes from './routes/session.js';
 import menuRoutes from './routes/menu.js';
 import orderRoutes from './routes/orders.js';
@@ -80,3 +81,7 @@ app.use((err, req, res, next) => {
 
 const port = process.env.PORT || 3000;
 app.listen(port, () => console.log(`Chowly API on http://localhost:${port}`));
+
+// Load schema + seed on first boot against an empty database (Render free tier
+// has no shell). Runs after listen() so the health check is already answering.
+bootstrapDatabase();

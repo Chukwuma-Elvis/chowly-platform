@@ -36,6 +36,7 @@ db/
   setup.mjs                   pg-driver loader: schema -> seed -> images
 server/       Express JSON API (also serves the built client in production)
   src/index.js                app wiring, pg session store, static SPA serving
+  src/bootstrap.js            first-boot: load schema/seed if the DB is empty
   src/db.js                   one pg Pool + a query() helper
   src/config.js               the active RESTAURANT_ID, the bar-vs-kitchen split
   src/middleware.js           requireCustomer / requireWaiter guards
@@ -132,11 +133,12 @@ npm --prefix client install --include=dev && npm --prefix client run build`. The
 build, which otherwise skips Vite / Tailwind and the build fails with "vite: not found".
 
 `server/index.js` sets `trust proxy` and a `secure` session cookie for HTTPS behind
-Render's proxy, and `db.js` enables SSL when `NODE_ENV=production`. After the first
-deploy the schema, seed and menu images are loaded once with `node db/setup.mjs` (it
-uses the `pg` driver, so no `psql` binary is needed on the host). Every later push
-redeploys the service; the database keeps its data. Step-by-step instructions are in
-`README.md`.
+Render's proxy, and `db.js` enables SSL when `NODE_ENV=production`. The free tier has no
+Shell, so `server/bootstrap.js` loads `schema.sql`, `seed.sql` and `menu_images.sql`
+automatically the first time the server starts against an empty database (it checks for
+the `menu_item` table and is a no-op once it exists, so redeploys never touch data). To
+reset or reload the hosted data manually, run `node db/setup.mjs` from a laptop against
+the database's external connection string. Step-by-step instructions are in `README.md`.
 
 ---
 

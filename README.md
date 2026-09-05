@@ -84,22 +84,20 @@ web service that builds `client/` and serves it alongside the API.
    repo. Render reads `render.yaml` and creates the `chowly-db` database and the
    `chowly` web service. `DATABASE_URL` is wired from the database, `SESSION_SECRET`
    is generated, `NODE_ENV=production`. Click **Apply** and wait for the first deploy.
-2. **Load the database — once.** When the deploy is green, open the `chowly` service
-   → **Shell** tab and run:
-   ```bash
-   node db/setup.mjs
-   ```
-   That applies `schema.sql`, `seed.sql` and `menu_images.sql` (it uses the `pg`
-   driver, so no `psql` is needed). Re-run any time to reset the data.
-   *(Alternative: copy the database's External Connection String from Render and run
-   `DATABASE_URL="postgres://…" node db/setup.mjs` from your machine.)*
-3. **Open the service URL.** Use the **Customer / Waiter** switch to move between roles.
+2. **Open the service URL.** That's it — the server loads `schema.sql`, `seed.sql` and
+   `menu_images.sql` automatically the first time it starts against an empty database
+   (the free tier has no Shell). It is a no-op on every later deploy, so data is kept.
 
-Every later `git push` to `main` redeploys automatically; the database keeps its data.
-On the free tier the web service sleeps after ~15 min idle — the first request after
-that takes ~30–60 s to wake.
+Use the **Customer / Waiter** switch to move between roles. Every later `git push` to
+`main` redeploys automatically. On the free tier the web service sleeps after ~15 min
+idle — the first request after that takes ~30–60 s to wake.
 
-### Updating menu photos after deploy
+### Resetting or reloading the hosted database
 
-`client/public/menu/*` files ship in the build automatically. After changing
-`db/menu_images.sql`, re-run `node db/setup.mjs --images` in the Render Shell.
+There is no Shell on the free tier, so run `setup.mjs` from your machine against the
+database's **External Connection String** (Render dashboard → `chowly-db` → *Connect*):
+
+```bash
+DATABASE_URL="postgres://…external…" node db/setup.mjs           # full reset
+DATABASE_URL="postgres://…external…" node db/setup.mjs --images  # just re-apply photos
+```

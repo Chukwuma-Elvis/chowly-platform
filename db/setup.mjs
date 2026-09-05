@@ -49,11 +49,11 @@ function stripMetaCommands(sql) {
     .join('\n');
 }
 
+// SSL for anything that isn't plain local Postgres (managed hosts require it).
+const isLocal = /@(localhost|127\.0\.0\.1)[:/]/.test(connectionString);
 const client = new pg.Client({
   connectionString,
-  ssl: /\bsslmode=require\b/.test(connectionString) || process.env.NODE_ENV === 'production'
-    ? { rejectUnauthorized: false }
-    : false,
+  ssl: isLocal && !/\bsslmode=require\b/.test(connectionString) ? false : { rejectUnauthorized: false },
 });
 
 await client.connect();
