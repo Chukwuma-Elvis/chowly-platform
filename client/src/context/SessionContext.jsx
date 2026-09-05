@@ -26,11 +26,11 @@ export function SessionProvider({ children }) {
       await api('/session/customer', { method: 'POST', body: payload });
       await refresh();
     },
-    async beWaiter() {
-      await api('/session/waiter', { method: 'POST' });
+    async setRole(role) {
+      await api('/session/role', { method: 'POST', body: { role } });
       await refresh();
     },
-    async switchRole() {
+    async resetVisit() {
       await api('/session/switch', { method: 'POST' });
       await refresh();
     },

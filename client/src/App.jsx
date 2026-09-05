@@ -8,7 +8,7 @@ import OrderTrackingPage from './pages/OrderTrackingPage.jsx';
 import WaiterDashboard from './pages/WaiterDashboard.jsx';
 
 export default function App() {
-  const { me, error, beWaiter, switchRole, setCurrentOrder } = useSession();
+  const { me, error, setRole, resetVisit, setCurrentOrder } = useSession();
   const [cartOpen, setCartOpen] = useState(false);
   const [view, setView] = useState('menu'); // 'menu' | 'order' | 'waiter'
 
@@ -27,8 +27,7 @@ export default function App() {
 
   async function onRoleChange(next) {
     if (next === role) return;
-    if (next === 'waiter') await beWaiter();
-    else await switchRole();
+    await setRole(next);
   }
 
   function onPlaced(orderId) {
@@ -51,10 +50,7 @@ export default function App() {
         {role === 'waiter' && <WaiterDashboard />}
         {role === 'customer' && view === 'menu' && <MenuPage />}
         {role === 'customer' && view === 'order' && me.currentOrderId && (
-          <OrderTrackingPage
-            orderId={me.currentOrderId}
-            onNewOrder={() => { setCurrentOrder(null); setView('menu'); }}
-          />
+          <OrderTrackingPage orderId={me.currentOrderId} onNewOrder={resetVisit} />
         )}
       </main>
 

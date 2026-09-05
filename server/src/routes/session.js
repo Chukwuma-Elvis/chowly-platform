@@ -54,13 +54,16 @@ router.post('/session/customer', async (req, res, next) => {
   }
 });
 
-// Start acting as a waiter - nothing to store beyond the role.
-router.post('/session/waiter', (req, res) => {
-  req.session.role = 'waiter';
-  res.json({ ok: true });
+// The Customer / Waiter toggle. Only flips which view you see - a customer's
+// identity and current order are kept, so switching to the waiter view to
+// check on things and back does not lose the order.
+router.post('/session/role', (req, res) => {
+  const role = req.body.role === 'waiter' ? 'waiter' : 'customer';
+  req.session.role = role;
+  res.json({ ok: true, role });
 });
 
-// Drop back to "no role chosen".
+// Full reset - forget the customer identity and start a fresh visit.
 router.post('/session/switch', (req, res) => {
   req.session.role = null;
   req.session.customerId = null;

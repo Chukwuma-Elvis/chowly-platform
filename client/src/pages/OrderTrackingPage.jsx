@@ -27,7 +27,7 @@ export default function OrderTrackingPage({ orderId, onNewOrder }) {
     return (
       <div className="mx-auto max-w-2xl space-y-3 text-center">
         <p className="text-sm text-muted">We couldn't load that order ({error}).</p>
-        <button type="button" className="btn-ghost" onClick={onNewOrder}>← Back to the menu</button>
+        <button type="button" className="btn-ghost" onClick={onNewOrder}>Start a new order</button>
       </div>
     );
   }
@@ -89,7 +89,7 @@ export default function OrderTrackingPage({ orderId, onNewOrder }) {
 
       <div className="pt-2">
         <button type="button" className="btn-ghost" onClick={onNewOrder}>
-          ← Back to the menu
+          Start a new order
         </button>
       </div>
     </div>
