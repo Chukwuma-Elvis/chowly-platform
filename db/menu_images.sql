@@ -22,7 +22,7 @@
 -- A few placeholders so you can see the card layout with a photo. Replace the
 -- URLs with real dish photos (or local /menu/*.jpg paths).
 
-UPDATE menu_item SET image_url = 'https://picsum.photos/seed/beef-suya/640/480'
+UPDATE menu_item SET image_url = '/menu/beef-suya.jpg'
   WHERE restaurant_id = 1 AND name = 'Beef Suya';
 UPDATE menu_item SET image_url = 'https://picsum.photos/seed/jollof/640/480'
   WHERE restaurant_id = 1 AND name = 'Jollof Rice';
