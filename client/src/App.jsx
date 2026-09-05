@@ -90,9 +90,7 @@ export default function App() {
           <LandingPage
             restaurant={me.restaurant}
             tableNumber={me.tableNumber}
-            hasOrder={Boolean(me.currentOrderId)}
             onEnter={() => setView('menu')}
-            onResumeOrder={() => setView('order')}
             onCheckOrder={() => setView('lookup')}
           />
         )}
