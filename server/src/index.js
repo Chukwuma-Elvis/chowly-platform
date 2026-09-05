@@ -20,6 +20,10 @@ app.set('trust proxy', 1); // Render terminates TLS in front of us
 app.use(morgan(isProd ? 'combined' : 'dev'));
 app.use(express.json());
 
+// Liveness check for the host - deliberately does NOT touch the database, so a
+// slow / not-yet-provisioned DB can't fail the deploy. DB check is /api/health/db.
+app.get('/api/health', (req, res) => res.json({ status: 'ok' }));
+
 const PgStore = connectPgSimple(session);
 app.use(session({
   store: new PgStore({ pool, createTableIfMissing: true }),
@@ -39,7 +43,7 @@ app.use(session({
 // ---------------------------------------------------------------------------
 const api = express.Router();
 
-api.get('/health', async (req, res) => {
+api.get('/health/db', async (req, res) => {
   try {
     const { rows } = await query('SELECT now() AS db_time');
     res.json({ status: 'ok', db_time: rows[0].db_time });

@@ -5,6 +5,7 @@
 databases:
   - name: chowly-db
     plan: free
+    region: oregon
     databaseName: chowly
     user: chowly_app
 
