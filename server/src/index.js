@@ -10,6 +10,7 @@ import { existsSync } from 'node:fs';
 import { pool, query } from './db.js';
 import sessionRoutes from './routes/session.js';
 import menuRoutes from './routes/menu.js';
+import orderRoutes from './routes/orders.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const isProd = process.env.NODE_ENV === 'production';
@@ -49,6 +50,7 @@ api.get('/health', async (req, res) => {
 
 api.use(sessionRoutes);
 api.use(menuRoutes);
+api.use(orderRoutes);
 
 app.use('/api', api);
 
