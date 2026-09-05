@@ -50,7 +50,7 @@ export default function CartDrawer({ open, onClose, onPlaced }) {
         onClick={onClose}
       />
       <aside
-        className={`fixed right-0 top-0 z-40 flex h-full w-full max-w-md flex-col bg-cream shadow-xl transition-transform ${
+        className={`fixed right-0 top-0 z-40 flex h-full w-full flex-col bg-cream shadow-xl transition-transform sm:max-w-md ${
           open ? 'translate-x-0' : 'translate-x-full'
         }`}
       >

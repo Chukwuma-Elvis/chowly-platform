@@ -26,12 +26,12 @@ export default function MenuPage() {
   const shown = active === 'all' ? items : items.filter((i) => i.category === active);
 
   return (
-    <div className="grid gap-8 sm:grid-cols-[200px_1fr]">
-      <aside>
+    <div className="grid gap-6 sm:grid-cols-[190px_minmax(0,1fr)] sm:gap-8">
+      <aside className="min-w-0">
         <CategorySidebar counts={counts} active={active} onSelect={setActive} />
       </aside>
 
-      <section>
+      <section className="min-w-0">
         <div className="mb-1 flex items-baseline justify-between">
           <h1 className="text-2xl text-ink">Good evening — what would you like tonight?</h1>
         </div>
