@@ -23,7 +23,14 @@ export default function OrderTrackingPage({ orderId, onNewOrder }) {
     return () => clearInterval(t);
   }, [load]);
 
-  if (error && !detail) return <p className="text-sm text-red-700">{error}</p>;
+  if (error && !detail) {
+    return (
+      <div className="mx-auto max-w-2xl space-y-3 text-center">
+        <p className="text-sm text-muted">We couldn't load that order ({error}).</p>
+        <button type="button" className="btn-ghost" onClick={onNewOrder}>← Back to the menu</button>
+      </div>
+    );
+  }
   if (!detail) return <p className="text-muted">Loading your order…</p>;
 
   const { order, items, total } = detail;

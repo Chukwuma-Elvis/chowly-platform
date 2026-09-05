@@ -5,6 +5,7 @@ import CartButton from './components/CartButton.jsx';
 import CartDrawer from './components/CartDrawer.jsx';
 import MenuPage from './pages/MenuPage.jsx';
 import OrderTrackingPage from './pages/OrderTrackingPage.jsx';
+import WaiterDashboard from './pages/WaiterDashboard.jsx';
 
 export default function App() {
   const { me, error, beWaiter, switchRole, setCurrentOrder } = useSession();
@@ -47,7 +48,7 @@ export default function App() {
       />
 
       <main className="mx-auto w-full max-w-6xl flex-1 px-5 py-8">
-        {role === 'waiter' && <CenteredNote>Waiter dashboard — next commit.</CenteredNote>}
+        {role === 'waiter' && <WaiterDashboard />}
         {role === 'customer' && view === 'menu' && <MenuPage />}
         {role === 'customer' && view === 'order' && me.currentOrderId && (
           <OrderTrackingPage

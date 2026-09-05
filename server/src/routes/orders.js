@@ -157,7 +157,9 @@ router.get('/waiter/orders', requireWaiter, async (req, res, next) => {
               ch.name AS chef_name,
               b.name  AS bartender_name,
               COALESCE(t.total, 0)::float8 AS total,
-              COALESCE(cp.open_complaints, 0)::int AS open_complaints
+              COALESCE(cp.open_complaints, 0)::int AS open_complaints,
+              cp.open_complaint_id,
+              cp.open_complaint_text
        FROM   orders o
        JOIN   customer c       ON c.id  = o.customer_id
        LEFT   JOIN waiter w    ON w.id  = o.waiter_id
@@ -168,9 +170,13 @@ router.get('/waiter/orders', requireWaiter, async (req, res, next) => {
                FROM order_item oi WHERE oi.order_id = o.id
              ) t ON TRUE
        LEFT   JOIN LATERAL (
-               SELECT COUNT(*) AS open_complaints
+               SELECT COUNT(*) FILTER (WHERE cc.resolution_status = 'open') AS open_complaints,
+                      (ARRAY_AGG(cc.id ORDER BY cc.submitted_at DESC)
+                         FILTER (WHERE cc.resolution_status = 'open'))[1] AS open_complaint_id,
+                      (ARRAY_AGG(cc.description ORDER BY cc.submitted_at DESC)
+                         FILTER (WHERE cc.resolution_status = 'open'))[1] AS open_complaint_text
                FROM complaint cc
-               WHERE cc.order_id = o.id AND cc.resolution_status = 'open'
+               WHERE cc.order_id = o.id
              ) cp ON TRUE
        WHERE  o.restaurant_id = $1
        ORDER  BY
