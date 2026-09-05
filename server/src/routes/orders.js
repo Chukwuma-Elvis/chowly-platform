@@ -263,5 +263,141 @@ router.post('/orders/:id/serve', requireWaiter, async (req, res, next) => {
   }
 });
 
+// ---------------------------------------------------------------------------
+//  Customer: complain about an order
+// ---------------------------------------------------------------------------
+router.post('/orders/:id/complaint', requireCustomer, async (req, res, next) => {
+  try {
+    const orderId = parseInt(req.params.id, 10);
+    const description = (req.body.description || '').trim();
+    if (!description) return res.status(400).json({ error: 'Tell us what went wrong.' });
+
+    const { rows: [order] } = await query(
+      'SELECT customer_id FROM orders WHERE id = $1 AND restaurant_id = $2',
+      [orderId, RESTAURANT_ID],
+    );
+    if (!order) return res.status(404).json({ error: 'Order not found.' });
+
+    const { rows: [row] } = await query(
+      `INSERT INTO complaint (order_id, customer_id, description)
+       VALUES ($1, $2, $3) RETURNING id`,
+      [orderId, order.customer_id, description],
+    );
+    res.status(201).json({ ok: true, complaintId: row.id });
+  } catch (err) {
+    next(err);
+  }
+});
+
+// ---------------------------------------------------------------------------
+//  Customer: rate an order (one rating per order - re-rating overwrites)
+// ---------------------------------------------------------------------------
+router.post('/orders/:id/rating', requireCustomer, async (req, res, next) => {
+  try {
+    const orderId = parseInt(req.params.id, 10);
+    const ratingValue = parseInt(req.body.ratingValue, 10);
+    const comment = (req.body.comment || '').trim() || null;
+    if (!(ratingValue >= 1 && ratingValue <= 5)) {
+      return res.status(400).json({ error: 'Rating must be between 1 and 5.' });
+    }
+
+    const { rows: [order] } = await query(
+      'SELECT customer_id FROM orders WHERE id = $1 AND restaurant_id = $2',
+      [orderId, RESTAURANT_ID],
+    );
+    if (!order) return res.status(404).json({ error: 'Order not found.' });
+
+    await query(
+      `INSERT INTO rating (order_id, customer_id, rating_value, comment)
+       VALUES ($1, $2, $3, $4)
+       ON CONFLICT (order_id)
+       DO UPDATE SET rating_value = EXCLUDED.rating_value,
+                     comment      = EXCLUDED.comment,
+                     submitted_at = now()`,
+      [orderId, order.customer_id, ratingValue, comment],
+    );
+    res.status(201).json({ ok: true });
+  } catch (err) {
+    next(err);
+  }
+});
+
+// ---------------------------------------------------------------------------
+//  Payment - a PRETEND payment, recorded and clearly flagged as such.
+//  Either role can take it (the customer pays, or the waiter rings it in).
+// ---------------------------------------------------------------------------
+router.post('/orders/:id/pay', async (req, res, next) => {
+  if (!['customer', 'waiter'].includes(req.session?.role)) {
+    return res.status(401).json({ error: 'Switch to the customer or waiter view first.' });
+  }
+  const client = await pool.connect();
+  try {
+    const orderId = parseInt(req.params.id, 10);
+    const method = (req.body.method || 'cash').trim();
+
+    await client.query('BEGIN');
+    const { rows: [order] } = await client.query(
+      `SELECT o.status, o.waiter_id,
+              COALESCE(SUM(oi.subtotal_naira), 0)::float8 AS total
+       FROM orders o
+       LEFT JOIN order_item oi ON oi.order_id = o.id
+       WHERE o.id = $1 AND o.restaurant_id = $2
+       GROUP BY o.status, o.waiter_id`,
+      [orderId, RESTAURANT_ID],
+    );
+    if (!order) {
+      await client.query('ROLLBACK');
+      return res.status(404).json({ error: 'Order not found.' });
+    }
+    if (order.status === 'paid') {
+      await client.query('ROLLBACK');
+      return res.status(409).json({ error: 'This order is already paid.' });
+    }
+    if (order.status !== 'served') {
+      await client.query('ROLLBACK');
+      return res.status(409).json({ error: 'The order has to be served before it can be paid.' });
+    }
+
+    await client.query(
+      `INSERT INTO payment (order_id, received_by_waiter_id, amount_naira, method, status, is_pretend)
+       VALUES ($1, $2, $3, $4, 'completed', TRUE)`,
+      [orderId, order.waiter_id, order.total, method],
+    );
+    await client.query(`UPDATE orders SET status = 'paid' WHERE id = $1`, [orderId]);
+    await client.query('COMMIT');
+    res.status(201).json({ ok: true, amount: order.total, pretend: true });
+  } catch (err) {
+    await client.query('ROLLBACK');
+    next(err);
+  } finally {
+    client.release();
+  }
+});
+
+// ---------------------------------------------------------------------------
+//  Waiter: resolve a complaint (feedback #3 - who resolved it is recorded)
+// ---------------------------------------------------------------------------
+router.post('/complaints/:id/resolve', requireWaiter, async (req, res, next) => {
+  try {
+    const complaintId = parseInt(req.params.id, 10);
+    const waiterId = parseInt(req.body.waiterId, 10) || null;
+    const { rows } = await query(
+      `UPDATE complaint c
+       SET resolution_status = 'resolved',
+           resolved_at = now(),
+           resolved_by_waiter_id = $2
+       FROM orders o
+       WHERE c.id = $1 AND o.id = c.order_id AND o.restaurant_id = $3
+         AND c.resolution_status = 'open'
+       RETURNING c.id`,
+      [complaintId, waiterId, RESTAURANT_ID],
+    );
+    if (rows.length === 0) return res.status(409).json({ error: 'That complaint is not open.' });
+    res.json({ ok: true });
+  } catch (err) {
+    next(err);
+  }
+});
+
 export { loadOrderDetail };
 export default router;
