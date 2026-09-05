@@ -1,11 +1,14 @@
 import 'dotenv/config';
 import express from 'express';
+import session from 'express-session';
+import connectPgSimple from 'connect-pg-simple';
 import morgan from 'morgan';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { existsSync } from 'node:fs';
 
-import { query } from './db.js';
+import { pool, query } from './db.js';
+import sessionRoutes from './routes/session.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const isProd = process.env.NODE_ENV === 'production';
@@ -14,6 +17,20 @@ const app = express();
 app.set('trust proxy', 1); // Render terminates TLS in front of us
 app.use(morgan(isProd ? 'combined' : 'dev'));
 app.use(express.json());
+
+const PgStore = connectPgSimple(session);
+app.use(session({
+  store: new PgStore({ pool, createTableIfMissing: true }),
+  secret: process.env.SESSION_SECRET || 'chowly-dev-secret',
+  resave: false,
+  saveUninitialized: false,
+  cookie: {
+    maxAge: 1000 * 60 * 60 * 12,
+    httpOnly: true,
+    sameSite: 'lax',
+    secure: isProd,
+  },
+}));
 
 // ---------------------------------------------------------------------------
 //  API
@@ -28,6 +45,8 @@ api.get('/health', async (req, res) => {
     res.status(500).json({ status: 'error', message: err.message });
   }
 });
+
+api.use(sessionRoutes);
 
 app.use('/api', api);
 
