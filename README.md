@@ -59,8 +59,27 @@ npm run build                 # builds client/dist, installs server deps
 NODE_ENV=production npm start  # Express serves the API + the SPA on :3000
 ```
 
-## Deploy
+## Deploy to Render
 
-See [`docs/chowly-application.md`](docs/chowly-application.md) for the full deployment
-walkthrough (Render blueprint from `render.yaml`, then `npm run db:setup` against the
-managed database).
+The repo ships a `render.yaml` blueprint: one free Postgres instance plus one Node
+web service that builds `client/` and serves it alongside the API.
+
+1. Push this repo to GitHub.
+2. Render dashboard → **New +** → **Blueprint** → pick the repo. Render reads
+   `render.yaml` and creates `chowly-db` and the `chowly` web service.
+   `DATABASE_URL` is wired from the database and `SESSION_SECRET` is generated.
+3. When the first deploy is green, load the schema and seed **once**. Either:
+   - open the web service **Shell** in Render and run
+     ```bash
+     node db/setup.mjs
+     ```
+     (the service already has `DATABASE_URL` in its environment), **or**
+   - copy the database's *External Connection String* from Render and run it
+     locally:
+     ```bash
+     DATABASE_URL="postgres://…external…" node db/setup.mjs
+     ```
+4. Open the service URL. Use the **Customer / Waiter** switch to move between roles.
+
+Redeploys happen automatically on every push to the default branch; the database
+keeps its data across them.

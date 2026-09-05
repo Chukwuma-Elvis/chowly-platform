@@ -15,6 +15,9 @@
     "db:seed": "node db/setup.mjs --seed",
     "db:setup": "node db/setup.mjs"
   },
+  "dependencies": {
+    "pg": "^8.13.1"
+  },
   "devDependencies": {
     "concurrently": "^9.1.0"
   }
