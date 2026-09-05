@@ -9,6 +9,15 @@ import OrderLookup from './pages/OrderLookup.jsx';
 import OrderTrackingPage from './pages/OrderTrackingPage.jsx';
 import WaiterDashboard from './pages/WaiterDashboard.jsx';
 
+// Remember, for this browser tab, that the customer has left the welcome
+// screen - so a page reload keeps them on the menu instead of bouncing back.
+const ENTERED_KEY = 'chowly.enteredMenu';
+const enteredMenu = {
+  get() { try { return sessionStorage.getItem(ENTERED_KEY) === '1'; } catch { return false; } },
+  set() { try { sessionStorage.setItem(ENTERED_KEY, '1'); } catch { /* ignore */ } },
+  clear() { try { sessionStorage.removeItem(ENTERED_KEY); } catch { /* ignore */ } },
+};
+
 export default function App() {
   const { me, error, setRole, resetVisit, setCurrentOrder } = useSession();
   const [cartOpen, setCartOpen] = useState(false);
@@ -29,7 +38,7 @@ export default function App() {
     const start = () => {
       if (me.role === 'waiter') return 'waiter';
       if (me.currentOrderId) return 'order';
-      if (me.tableNumber) return 'menu';
+      if (me.tableNumber || enteredMenu.get()) return 'menu';
       return 'landing';
     };
 
@@ -55,6 +64,7 @@ export default function App() {
   }
 
   async function goHome() {
+    enteredMenu.clear();
     if (me.role === 'waiter') {
       pendingView.current = 'landing'; // survive the role-change re-sync
       await setRole('customer');
@@ -90,7 +100,7 @@ export default function App() {
           <LandingPage
             restaurant={me.restaurant}
             tableNumber={me.tableNumber}
-            onEnter={() => setView('menu')}
+            onEnter={() => { enteredMenu.set(); setView('menu'); }}
             onCheckOrder={() => setView('lookup')}
           />
         )}
@@ -104,7 +114,7 @@ export default function App() {
         {role === 'customer' && view === 'order' && me.currentOrderId && (
           <OrderTrackingPage
             orderId={me.currentOrderId}
-            onNewOrder={async () => { await resetVisit(); setView('landing'); }}
+            onNewOrder={async () => { enteredMenu.clear(); await resetVisit(); setView('landing'); }}
           />
         )}
       </main>
