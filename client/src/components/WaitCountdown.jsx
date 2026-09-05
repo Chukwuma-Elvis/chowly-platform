@@ -33,9 +33,11 @@ export default function WaitCountdown({ order }) {
         ? `About ${minsLate} min past the ${minutesLabel(order.estimated_wait_minutes)} estimate`
         : `Past the ${minutesLabel(order.estimated_wait_minutes)} estimate`;
   } else if (order.actual_wait_minutes != null) {
-    big = `Served in ${minutesLabel(order.actual_wait_minutes)}`;
-    sub =
-      order.actual_wait_minutes > order.estimated_wait_minutes
+    const sane = order.actual_wait_minutes <= 6 * 60; // guard the historical seed orders
+    big = sane ? `Served in ${minutesLabel(order.actual_wait_minutes)}` : 'Served';
+    sub = !sane
+      ? null
+      : order.actual_wait_minutes > order.estimated_wait_minutes
         ? `Longer than the ${minutesLabel(order.estimated_wait_minutes)} estimate`
         : `Within the ${minutesLabel(order.estimated_wait_minutes)} estimate`;
   } else {

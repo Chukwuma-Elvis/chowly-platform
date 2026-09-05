@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useSession } from './context/SessionContext.jsx';
 import Header from './components/Header.jsx';
 import CartButton from './components/CartButton.jsx';
@@ -12,17 +12,37 @@ import WaiterDashboard from './pages/WaiterDashboard.jsx';
 export default function App() {
   const { me, error, setRole, resetVisit, setCurrentOrder } = useSession();
   const [cartOpen, setCartOpen] = useState(false);
-  const [entered, setEntered] = useState(false);
   const [view, setView] = useState('landing'); // 'landing' | 'lookup' | 'menu' | 'order' | 'waiter'
 
-  // Keep the view in step with the session (e.g. after a refresh mid-order).
+  const initialised = useRef(false);
+  const prevRole = useRef(undefined);
+  const pendingView = useRef(null); // an explicit navigation waiting on a session change
+
+  // The view is authoritative once set. The session only steers it on the
+  // first load and whenever the role actually changes (toggle, reset) - unless
+  // an explicit navigation (e.g. the logo) has asked for a specific view.
   useEffect(() => {
     if (!me) return;
-    if (me.role === 'waiter') setView('waiter');
-    else if (me.currentOrderId) setView('order');
-    else if (entered || me.tableNumber) setView('menu');
-    else setView('landing');
-  }, [me, entered]);
+    const roleChanged = prevRole.current !== undefined && prevRole.current !== me.role;
+    prevRole.current = me.role;
+
+    const start = () => {
+      if (me.role === 'waiter') return 'waiter';
+      if (me.currentOrderId) return 'order';
+      if (me.tableNumber) return 'menu';
+      return 'landing';
+    };
+
+    if (pendingView.current) {
+      setView(pendingView.current);
+      pendingView.current = null;
+    } else if (!initialised.current) {
+      initialised.current = true;
+      setView(start());
+    } else if (roleChanged) {
+      setView(start());
+    }
+  }, [me]);
 
   if (error && !me) return <CenteredNote>Could not reach the server. {error}</CenteredNote>;
   if (!me) return <CenteredNote>Loading…</CenteredNote>;
@@ -31,8 +51,16 @@ export default function App() {
 
   async function onRoleChange(next) {
     if (next === role) return;
-    if (next === 'customer') setEntered(false); // land a fresh customer on the welcome screen
     await setRole(next);
+  }
+
+  async function goHome() {
+    if (me.role === 'waiter') {
+      pendingView.current = 'landing'; // survive the role-change re-sync
+      await setRole('customer');
+    } else {
+      setView('landing');
+    }
   }
 
   function onPlaced(orderId) {
@@ -48,6 +76,7 @@ export default function App() {
         tableNumber={me.tableNumber}
         role={role}
         onRoleChange={onRoleChange}
+        onHome={goHome}
         right={
           role === 'customer' && (view === 'menu' || view === 'order')
             ? <CartButton onClick={() => setCartOpen(true)} />
@@ -61,7 +90,9 @@ export default function App() {
           <LandingPage
             restaurant={me.restaurant}
             tableNumber={me.tableNumber}
-            onEnter={() => { setEntered(true); setView('menu'); }}
+            hasOrder={Boolean(me.currentOrderId)}
+            onEnter={() => setView('menu')}
+            onResumeOrder={() => setView('order')}
             onCheckOrder={() => setView('lookup')}
           />
         )}
@@ -75,7 +106,7 @@ export default function App() {
         {role === 'customer' && view === 'order' && me.currentOrderId && (
           <OrderTrackingPage
             orderId={me.currentOrderId}
-            onNewOrder={async () => { setEntered(false); await resetVisit(); }}
+            onNewOrder={async () => { await resetVisit(); setView('landing'); }}
           />
         )}
       </main>

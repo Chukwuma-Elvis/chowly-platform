@@ -1,11 +1,22 @@
 import Logo from './Logo.jsx';
 import RoleToggle from './RoleToggle.jsx';
 
-export default function Header({ restaurant, tableNumber, role, onRoleChange, right }) {
+export default function Header({ restaurant, tableNumber, role, onRoleChange, onHome, right }) {
   return (
     <header className="sticky top-0 z-20 border-b border-sand bg-cream/90 backdrop-blur">
       <div className="mx-auto flex max-w-6xl items-center justify-between gap-2 px-4 py-3 sm:gap-4 sm:px-5">
-        <Logo />
+        {onHome ? (
+          <button
+            type="button"
+            onClick={onHome}
+            className="rounded-md transition hover:opacity-80 focus:outline-none focus-visible:ring-2 focus-visible:ring-clay"
+            aria-label="Chowly home"
+          >
+            <Logo />
+          </button>
+        ) : (
+          <Logo />
+        )}
 
         <div className="hidden text-center sm:block">
           <div className="font-serif text-lg text-ink">{restaurant?.name || 'Chowly'}</div>

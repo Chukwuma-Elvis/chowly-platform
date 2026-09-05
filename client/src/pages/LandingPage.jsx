@@ -1,4 +1,11 @@
-export default function LandingPage({ restaurant, tableNumber, onEnter, onCheckOrder }) {
+export default function LandingPage({
+  restaurant,
+  tableNumber,
+  hasOrder,
+  onEnter,
+  onResumeOrder,
+  onCheckOrder,
+}) {
   return (
     <div className="mx-auto flex min-h-[70vh] max-w-2xl flex-col items-center justify-center py-10 text-center">
       <svg width="64" height="64" viewBox="0 0 32 32" aria-hidden="true" className="mb-6">
@@ -40,6 +47,12 @@ export default function LandingPage({ restaurant, tableNumber, onEnter, onCheckO
           ? `You're at Table ${tableNumber}.`
           : 'We’ll ask which table you’re at when you place your order.'}
       </p>
+
+      {hasOrder && (
+        <button type="button" onClick={onResumeOrder} className="btn-ghost mt-4">
+          Back to your order
+        </button>
+      )}
 
       <button
         type="button"

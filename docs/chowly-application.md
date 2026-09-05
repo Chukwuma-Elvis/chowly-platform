@@ -208,4 +208,5 @@ Everything above is stored in PostgreSQL — refreshing any screen reloads the s
 8. **Start over.** "Start a new order" clears the visit so the next person can begin fresh.
 
 The **Customer / Waiter** switch in the header is the only thing you need to move between
-the two roles — there is no login.
+the two roles — there is no login. Clicking the **Chowly** logo (top-left) always returns
+to the welcome page.
