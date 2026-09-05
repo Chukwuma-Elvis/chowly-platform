@@ -1,0 +1,6 @@
+# Normalise line endings: store text as LF in the repo, check out native.
+# Keeps the repo clean when the same code runs on Windows (dev) and Linux (host).
+* text=auto eol=lf
+*.png binary
+*.jpg binary
+*.ico binary

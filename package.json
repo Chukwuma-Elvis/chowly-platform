@@ -1,0 +1,21 @@
+{
+  "name": "chowly-platform",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Chowly - in-restaurant ordering, assignment, complaint/rating and pretend-payment platform",
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "dev": "concurrently -k -n server,client -c blue,magenta \"npm --prefix server run dev\" \"npm --prefix client run dev\"",
+    "build": "npm --prefix client install && npm --prefix client run build && npm --prefix server install",
+    "start": "npm --prefix server start",
+    "db:schema": "node db/setup.mjs --schema",
+    "db:seed": "node db/setup.mjs --seed",
+    "db:setup": "node db/setup.mjs"
+  },
+  "devDependencies": {
+    "concurrently": "^9.1.0"
+  }
+}
