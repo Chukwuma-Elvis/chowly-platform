@@ -198,6 +198,7 @@ router.get('/waiter/orders', requireWaiter, async (req, res, next) => {
               b.name  AS bartender_name,
               COALESCE(t.total, 0)::float8 AS total,
               COALESCE(it.items, '[]'::json) AS items,
+              pm.method AS payment_method,
               COALESCE(cp.open_complaints, 0)::int AS open_complaints,
               cp.open_complaint_id,
               cp.open_complaint_text
@@ -206,6 +207,7 @@ router.get('/waiter/orders', requireWaiter, async (req, res, next) => {
        LEFT   JOIN waiter w    ON w.id  = o.waiter_id
        LEFT   JOIN chef ch     ON ch.id = o.chef_id
        LEFT   JOIN bartender b ON b.id  = o.bartender_id
+       LEFT   JOIN payment pm  ON pm.order_id = o.id
        LEFT   JOIN LATERAL (
                SELECT SUM(oi.subtotal_naira) AS total
                FROM order_item oi WHERE oi.order_id = o.id

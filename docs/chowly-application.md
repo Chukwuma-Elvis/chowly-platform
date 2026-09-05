@@ -164,8 +164,11 @@ asks for the **name and table number** used on the order and reopens its trackin
 
 ### Order assignment
 Switching to **Waiter** shows the order board, newest and most urgent first. Every card
-lists the ordered items with their subtotals and the order total. A pending order has
-three dropdowns — **waiter, chef, bartender** — filled from the seeded staff lists. **Confirm assignment** records the three on the order, moves it to `preparing`,
+lists the ordered items with their subtotals and the order total. A **paid** card is
+collapsible — opening it shows the full order summary: placed / served / paid times, the
+prep team, the itemised bill, the **payment (amount, method, time)** with the pretend
+badge, and any complaint and rating. A pending order has three dropdowns — **waiter,
+chef, bartender** — filled from the seeded staff lists. **Confirm assignment** records the three on the order, moves it to `preparing`,
 and stamps `prep_start_time` on every item. A preparing order shows the assigned team and
 a **Mark served** button, which sets `status = 'served'`, `served_at`, the
 `actual_wait_minutes`, and `prep_end_time` on every item.

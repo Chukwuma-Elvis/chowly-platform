@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { api } from '../api.js';
 import { naira, minutesLabel } from '../lib/format.js';
 import StatusBadge from '../components/StatusBadge.jsx';
+import OrderSummary from '../components/OrderSummary.jsx';
 
 const PAYMENT_METHODS = ['cash', 'card', 'transfer'];
 
@@ -48,6 +49,20 @@ function OrderRow({ order: o, staff, onChange }) {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState(null);
 
+  const [open, setOpen] = useState(false);
+  const [detail, setDetail] = useState(null);
+  const [detailError, setDetailError] = useState(null);
+  const completed = o.status === 'paid';
+
+  function toggleSummary() {
+    const next = !open;
+    setOpen(next);
+    if (next && !detail) {
+      setDetailError(null);
+      api(`/orders/${o.id}`).then(setDetail).catch((err) => setDetailError(err.message));
+    }
+  }
+
   async function call(path, body) {
     setBusy(true);
     setError(null);
@@ -61,9 +76,22 @@ function OrderRow({ order: o, staff, onChange }) {
     }
   }
 
+  const headerProps = completed
+    ? {
+        onClick: toggleSummary,
+        role: 'button',
+        tabIndex: 0,
+        onKeyDown: (e) => {
+          if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); toggleSummary(); }
+        },
+        'aria-expanded': open,
+        className: '-m-1 flex flex-wrap items-center justify-between gap-2 rounded-lg p-1 cursor-pointer hover:bg-cream/60',
+      }
+    : { className: 'flex flex-wrap items-center justify-between gap-2' };
+
   return (
     <div className="card p-4">
-      <div className="flex flex-wrap items-center justify-between gap-2">
+      <div {...headerProps}>
         <div>
           <span className="font-medium text-ink">Order #{o.id}</span>
           <span className="ml-2 text-sm text-muted">Table {o.table_number} · {o.customer_name}</span>
@@ -75,28 +103,48 @@ function OrderRow({ order: o, staff, onChange }) {
             </span>
           )}
           <StatusBadge status={o.status} />
+          {completed && <span className="text-muted">{open ? '▴' : '▾'}</span>}
         </div>
       </div>
 
       <div className="mt-1 text-sm text-muted">
         {naira(o.total)} · est. {minutesLabel(o.estimated_wait_minutes)}
-        {o.actual_wait_minutes != null && ` · served in ${minutesLabel(o.actual_wait_minutes)}`}
+        {o.actual_wait_minutes != null &&
+          o.actual_wait_minutes <= 6 * 60 &&
+          ` · served in ${minutesLabel(o.actual_wait_minutes)}`}
       </div>
 
-      <ul className="mt-3 space-y-1 rounded-lg bg-cream/70 p-3 text-sm">
-        {(o.items || []).map((it, i) => (
-          <li key={i} className="flex justify-between gap-3">
-            <span className="text-ink">
-              <span className="font-medium">{it.quantity}×</span> {it.name}
-            </span>
-            <span className="text-muted">{naira(it.subtotal_naira)}</span>
+      {!(completed && open) && (
+        <ul className="mt-3 space-y-1 rounded-lg bg-cream/70 p-3 text-sm">
+          {(o.items || []).map((it, i) => (
+            <li key={i} className="flex justify-between gap-3">
+              <span className="text-ink">
+                <span className="font-medium">{it.quantity}×</span> {it.name}
+              </span>
+              <span className="text-muted">{naira(it.subtotal_naira)}</span>
+            </li>
+          ))}
+          <li className="flex justify-between gap-3 border-t border-sand pt-1 font-medium">
+            <span>Total</span>
+            <span>{naira(o.total)}</span>
           </li>
-        ))}
-        <li className="flex justify-between gap-3 border-t border-sand pt-1 font-medium">
-          <span>Total</span>
-          <span>{naira(o.total)}</span>
-        </li>
-      </ul>
+        </ul>
+      )}
+
+      {completed && (
+        <div className="mt-3">
+          {!open && (
+            <button type="button" onClick={toggleSummary} className="text-xs text-clay hover:text-clay-dark">
+              {o.payment_method
+                ? `Paid by ${o.payment_method} · view full summary`
+                : 'View full summary'}
+            </button>
+          )}
+          {open && detailError && <p className="text-sm text-red-700">{detailError}</p>}
+          {open && !detail && !detailError && <p className="text-sm text-muted">Loading…</p>}
+          {open && detail && <OrderSummary detail={detail} />}
+        </div>
+      )}
 
       {o.open_complaints > 0 && o.open_complaint_text && (
         <div className="mt-3 rounded-lg border border-clay-soft bg-clay-tint p-3 text-sm">
