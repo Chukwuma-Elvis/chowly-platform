@@ -3,6 +3,7 @@ import { api } from '../api.js';
 import { naira } from '../lib/format.js';
 import { useCart } from '../context/CartContext.jsx';
 import { useSession } from '../context/SessionContext.jsx';
+import TableSelect from './TableSelect.jsx';
 
 export default function CartDrawer({ open, onClose, onPlaced }) {
   const { lines, total, count, add, remove, clear } = useCart();
@@ -20,7 +21,7 @@ export default function CartDrawer({ open, onClose, onPlaced }) {
     setError(null);
     try {
       if (!identified) {
-        if (!tableNumber.trim()) throw new Error('Table number is required.');
+        if (!tableNumber) throw new Error('Please choose your table.');
         await beCustomer({ name: name.trim(), tableNumber: tableNumber.trim() });
       }
       const items = lines.map((l) => ({ menuItemId: l.item.id, qty: l.qty }));
@@ -96,8 +97,8 @@ export default function CartDrawer({ open, onClose, onPlaced }) {
                 <input className="field mt-1" value={name} onChange={(e) => setName(e.target.value)} placeholder="e.g. Amarachi" />
               </label>
               <label className="block text-xs text-muted">
-                Table number
-                <input className="field mt-1" value={tableNumber} onChange={(e) => setTableNumber(e.target.value)} placeholder="e.g. T05" />
+                Table
+                <TableSelect value={tableNumber} onChange={setTableNumber} />
               </label>
             </div>
           )}

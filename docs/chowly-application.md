@@ -145,7 +145,7 @@ in naira, the name and a short description. No identity is needed to browse.
 ### Order placement
 `+ Add to Order` puts an item in the cart (the header shows the count). Opening the cart
 lists the lines with quantity steppers and a running total. **Continue** asks for a name
-(optional) and a **table number** (required); **Place order** then:
+(optional) and the **table** (a dropdown of tables 1–20, required); **Place order** then:
 1. creates the `customer` row and stores the identity in the session;
 2. inserts the `orders` row (`status = 'pending'`) and one `order_item` per line, each
    with a snapshot of the current price;
@@ -194,8 +194,8 @@ Everything above is stored in PostgreSQL — refreshing any screen reloads the s
 
 1. **Open the link.** You land on the venue's welcome screen — click **View the menu**.
 2. **Browse.** Use the `BROWSE` sidebar to filter by category.
-3. **Order.** Add a few items, open the cart (top-right), **Continue**, enter a table
-   number like `T05`, **Place order**. You are now on the tracking screen with a wait
+3. **Order.** Add a few items, open the cart (top-right), **Continue**, pick your table
+   from the dropdown, **Place order**. You are now on the tracking screen with a wait
    estimate.
 4. **Be the waiter.** Click **Waiter** in the header. Each order card lists its items.
    Find your order (it is `pending`), pick a waiter, chef and bartender, **Confirm

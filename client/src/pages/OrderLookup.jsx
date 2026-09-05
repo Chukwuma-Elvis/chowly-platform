@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useSession } from '../context/SessionContext.jsx';
+import TableSelect from '../components/TableSelect.jsx';
 
 export default function OrderLookup({ onFound, onBack }) {
   const { me, lookupOrder } = useSession();
@@ -10,10 +11,11 @@ export default function OrderLookup({ onFound, onBack }) {
 
   async function submit(e) {
     e.preventDefault();
+    if (!tableNumber) { setError('Choose your table.'); return; }
     setBusy(true);
     setError(null);
     try {
-      const orderId = await lookupOrder({ name: name.trim(), tableNumber: tableNumber.trim() });
+      const orderId = await lookupOrder({ name: name.trim(), tableNumber });
       onFound(orderId);
     } catch (err) {
       setError(err.message);
@@ -26,8 +28,8 @@ export default function OrderLookup({ onFound, onBack }) {
     <div className="mx-auto max-w-sm py-10">
       <h1 className="text-2xl text-ink">Check your order</h1>
       <p className="mt-1 text-sm text-muted">
-        Enter the name and table number you used when you ordered, and we&rsquo;ll bring up
-        its status and the time left.
+        Enter the name and table you used when you ordered, and we&rsquo;ll bring up its
+        status and the time left.
       </p>
 
       <form onSubmit={submit} className="card mt-6 space-y-3 p-4">
@@ -42,14 +44,8 @@ export default function OrderLookup({ onFound, onBack }) {
           />
         </label>
         <label className="block text-xs text-muted">
-          Table number
-          <input
-            className="field mt-1"
-            value={tableNumber}
-            onChange={(e) => setTableNumber(e.target.value)}
-            placeholder="e.g. T05"
-            required
-          />
+          Table
+          <TableSelect value={tableNumber} onChange={setTableNumber} />
         </label>
         {error && <p className="text-sm text-red-700">{error}</p>}
         <button className="btn-primary w-full" disabled={busy}>

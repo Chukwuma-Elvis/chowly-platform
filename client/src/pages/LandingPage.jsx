@@ -35,11 +35,11 @@ export default function LandingPage({ restaurant, tableNumber, onEnter, onCheckO
         View the menu
       </button>
 
-      <p className="mt-4 text-xs text-muted">
+      {/* <p className="mt-4 text-xs text-muted">
         {tableNumber
           ? `You're at Table ${tableNumber}.`
           : 'We’ll ask which table you’re at when you place your order.'}
-      </p>
+      </p> */}
 
       <button
         type="button"
