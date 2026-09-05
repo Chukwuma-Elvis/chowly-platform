@@ -5,6 +5,7 @@ import { CATEGORY_LABEL } from '../lib/categories.js';
 import StatusBadge from '../components/StatusBadge.jsx';
 import WaitCountdown from '../components/WaitCountdown.jsx';
 import PrepTeam from '../components/PrepTeam.jsx';
+import { ComplaintPanel, RatingPanel, PaymentPanel } from '../components/OrderPanels.jsx';
 
 export default function OrderTrackingPage({ orderId, onNewOrder }) {
   const [detail, setDetail] = useState(null);
@@ -74,6 +75,10 @@ export default function OrderTrackingPage({ orderId, onNewOrder }) {
       </div>
 
       <PrepTeam order={order} />
+
+      <PaymentPanel detail={detail} total={total} onChange={load} />
+      <ComplaintPanel detail={detail} onChange={load} />
+      <RatingPanel detail={detail} onChange={load} />
 
       <div className="pt-2">
         <button type="button" className="btn-ghost" onClick={onNewOrder}>
