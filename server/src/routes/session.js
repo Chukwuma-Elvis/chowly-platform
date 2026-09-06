@@ -15,12 +15,27 @@ async function currentRestaurant() {
 // Who am I acting as right now? Called on every client load.
 router.get('/me', async (req, res, next) => {
   try {
+    // Only keep pinning the visitor to an order while it's still in progress.
+    // Once it's paid (or gone), forget it so a reload lands on the welcome page.
+    let currentOrderId = req.session.currentOrderId || null;
+    if (currentOrderId) {
+      const { rows } = await query(
+        `SELECT status FROM orders WHERE id = $1 AND restaurant_id = $2`,
+        [currentOrderId, RESTAURANT_ID],
+      );
+      const status = rows[0]?.status;
+      if (!status || status === 'paid' || status === 'cancelled') {
+        req.session.currentOrderId = null;
+        currentOrderId = null;
+      }
+    }
+
     res.json({
       role: req.session.role || null,
       customerId: req.session.customerId || null,
       customerName: req.session.customerName || null,
       tableNumber: req.session.tableNumber || null,
-      currentOrderId: req.session.currentOrderId || null,
+      currentOrderId,
       restaurant: await currentRestaurant(),
     });
   } catch (err) {
