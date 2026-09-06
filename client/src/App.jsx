@@ -79,6 +79,8 @@ export default function App() {
     setView('order');
   }
 
+  const onLanding = role === 'customer' && view === 'landing';
+
   return (
     <div className="flex min-h-screen flex-col">
       <Header
@@ -87,6 +89,7 @@ export default function App() {
         role={role}
         onRoleChange={onRoleChange}
         onHome={goHome}
+        dark={onLanding}
         right={
           role === 'customer' && (view === 'menu' || view === 'order')
             ? <CartButton onClick={() => setCartOpen(true)} />
@@ -99,7 +102,6 @@ export default function App() {
         {role === 'customer' && view === 'landing' && (
           <LandingPage
             restaurant={me.restaurant}
-            tableNumber={me.tableNumber}
             onEnter={() => { enteredMenu.set(); setView('menu'); }}
             onCheckOrder={() => setView('lookup')}
           />
@@ -121,7 +123,11 @@ export default function App() {
 
       {role === 'customer' && <CartDrawer open={cartOpen} onClose={() => setCartOpen(false)} onPlaced={onPlaced} />}
 
-      <footer className="mx-auto w-full max-w-6xl px-5 py-6 text-xs text-muted">
+      <footer
+        className={`mx-auto w-full max-w-6xl px-5 py-6 text-xs ${
+          onLanding ? 'text-cream/50 [text-shadow:0_1px_8px_rgba(0,0,0,0.6)]' : 'text-muted'
+        }`}
+      >
         Chowly · in-restaurant ordering · payments on this platform are simulated — no real money moves.
       </footer>
     </div>
