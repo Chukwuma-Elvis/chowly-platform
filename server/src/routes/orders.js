@@ -79,6 +79,26 @@ router.post('/orders', requireCustomer, async (req, res, next) => {
   try {
     await client.query('BEGIN');
 
+    // One open order per table: the previous order at this table must be paid
+    // (or cancelled) before a new one can be placed.
+    const { rows: openRows } = await client.query(
+      `SELECT id FROM orders
+       WHERE restaurant_id = $1 AND table_number = $2
+         AND status NOT IN ('paid', 'cancelled')
+       ORDER BY order_datetime DESC
+       LIMIT 1`,
+      [RESTAURANT_ID, req.session.tableNumber],
+    );
+    if (openRows.length > 0) {
+      await client.query('ROLLBACK');
+      return res.status(409).json({
+        error:
+          `Table ${req.session.tableNumber} already has an order in progress. ` +
+          `It has to be paid before you can place another — use “Check your order status” to view it.`,
+        openOrderId: openRows[0].id,
+      });
+    }
+
     const ids = requested.map((r) => r.menuItemId);
     const { rows: menuRows } = await client.query(
       `SELECT id, price_naira, avg_prep_minutes, category

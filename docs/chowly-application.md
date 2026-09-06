@@ -244,6 +244,10 @@ lists the lines with quantity steppers and a running total. **Continue** asks fo
 3. sets the order's **estimated wait** to `max(sum of kitchen prep times, sum of bar
    prep times)` — the kitchen and bar work in parallel.
 
+**One open order per table.** If that table already has an order that isn't `paid` (or
+`cancelled`), the order is refused with a 409 and the cart offers a link straight to the
+current order. A new order can only be placed at the table once the previous one is paid.
+
 The customer lands on the **order tracking** screen: status, a live **MM:SS countdown**
 to the estimated ready time (which flips to "running late" once the estimate is passed,
 then to "served in N min" afterwards), the itemised list with the total, and "who's

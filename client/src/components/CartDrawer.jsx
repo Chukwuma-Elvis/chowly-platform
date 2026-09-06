@@ -15,10 +15,12 @@ export default function CartDrawer({ open, onClose, onPlaced }) {
   const [tableNumber, setTableNumber] = useState('');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState(null);
+  const [openOrderId, setOpenOrderId] = useState(null); // table already has an order
 
   async function placeOrder() {
     setBusy(true);
     setError(null);
+    setOpenOrderId(null);
     try {
       if (!identified) {
         if (!tableNumber) throw new Error('Please choose your table.');
@@ -31,6 +33,7 @@ export default function CartDrawer({ open, onClose, onPlaced }) {
       onPlaced(orderId);
     } catch (err) {
       setError(err.message);
+      if (err.body?.openOrderId) setOpenOrderId(err.body.openOrderId);
     } finally {
       setBusy(false);
     }
@@ -104,7 +107,18 @@ export default function CartDrawer({ open, onClose, onPlaced }) {
           )}
 
           {error && (
-            <p className="mt-4 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">{error}</p>
+            <div className="mt-4 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
+              <p>{error}</p>
+              {openOrderId && (
+                <button
+                  type="button"
+                  onClick={() => { onClose(); onPlaced(openOrderId); }}
+                  className="mt-2 font-medium underline hover:no-underline"
+                >
+                  View the current order for this table
+                </button>
+              )}
+            </div>
           )}
         </div>
 

@@ -272,7 +272,9 @@ body.push(p('"+ Add to Order" puts an item in the cart, and the header shows the
 body.push(nStep('creates the customer row and stores the identity in the session;'));
 body.push(nStep('inserts the order (status pending) and one order_item per line, each with a snapshot of the current price;'));
 body.push(nStep('sets the estimated wait to the larger of the kitchen queue and the bar queue, since the two prepare in parallel.'));
+body.push(p('One open order per table: if the chosen table already has an order that is not paid (or cancelled), the order is refused and the cart offers a link straight to that current order. A fresh order can only be placed at the table once the previous one is paid.'));
 body.push(...shot('The cart, with the table dropdown, at checkout'));
+body.push(...shot('Trying to order at a table that already has an order in progress'));
 
 body.push(h3('4.4 Order Tracking and the Wait Countdown'));
 body.push(p('The customer lands on the order tracking screen: the status, a live MM:SS countdown to the estimated ready time (which flips to "running late" once the estimate is passed, then to "served in N minutes" afterwards), the itemised list with the total, and "who’s handling this" (empty until a waiter picks it up). The screen polls every five seconds and survives a page refresh.'));
