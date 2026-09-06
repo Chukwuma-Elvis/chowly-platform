@@ -75,9 +75,29 @@ router.post('/orders', requireCustomer, async (req, res, next) => {
     return res.status(400).json({ error: 'Add at least one item before placing the order.' });
   }
 
+  if (!req.session.tableNumber) {
+    return res.status(400).json({ error: 'Choose your table before placing the order.' });
+  }
+
   const client = await pool.connect();
   try {
     await client.query('BEGIN');
+
+    // Make sure the session's customer still exists (a DB reset, or an old
+    // cookie, can leave a stale id). Recreate it from the stored name if not.
+    let customerId = req.session.customerId;
+    const { rows: custRows } = await client.query(
+      'SELECT 1 FROM customer WHERE id = $1',
+      [customerId],
+    );
+    if (custRows.length === 0) {
+      const { rows: [c] } = await client.query(
+        'INSERT INTO customer (name) VALUES ($1) RETURNING id',
+        [req.session.customerName || 'Guest'],
+      );
+      customerId = c.id;
+      req.session.customerId = customerId;
+    }
 
     // One open order per table: the previous order at this table must be paid
     // (or cancelled) before a new one can be placed.
@@ -126,7 +146,7 @@ router.post('/orders', requireCustomer, async (req, res, next) => {
       `INSERT INTO orders (restaurant_id, customer_id, table_number, status, estimated_wait_minutes)
        VALUES ($1, $2, $3, 'pending', $4)
        RETURNING id`,
-      [RESTAURANT_ID, req.session.customerId, req.session.tableNumber, estimatedWait],
+      [RESTAURANT_ID, customerId, req.session.tableNumber, estimatedWait],
     );
 
     for (const line of requested) {
