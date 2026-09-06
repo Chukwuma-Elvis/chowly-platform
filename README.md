@@ -94,11 +94,13 @@ Neon signup).
 1. **Import.** [vercel.com/new](https://vercel.com/new) → import the GitHub repo. Vercel
    reads `vercel.json` (build → `client/dist`, `/api/*` → the function).
 2. **Database.** Project → **Storage** → **Create Database** → **Neon** (Postgres). Vercel
-   creates it and injects the connection env var automatically. `db.js` accepts
-   `DATABASE_URL`, `POSTGRES_URL` or `POSTGRES_PRISMA_URL`, so no renaming is needed.
+   injects a set of connection variables (`..._POSTGRES_URL`, `..._PGHOST`, …). `db.js`
+   auto-detects the pooled `postgres://` URL among them, whatever prefix the integration
+   used, so no renaming is needed.
 3. **Session secret.** Project → **Settings → Environment Variables** → add
-   `SESSION_SECRET` = any long random string. Redeploy.
-4. **Open the URL.** The first request loads the schema + seed (a few seconds), then it's
+   `SESSION_SECRET` = any long random string.
+4. **Redeploy** (Deployments → latest → ⋯ → Redeploy) so the new variables take effect.
+5. **Open the URL.** The first request loads the schema + seed (a few seconds), then it's
    instant. Every `git push` redeploys.
 
 ### Render (fallback) — `render.yaml`
