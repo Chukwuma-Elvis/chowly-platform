@@ -222,8 +222,8 @@ The build was done with an AI coding assistant (Claude, via Claude Code).
 ### Welcome screen
 Opening the app shows a short welcome page for the active venue — its name and address,
 a one-line explanation of how ordering works, and a **View the menu** button. It is shown
-only to a fresh customer; someone with an order already in progress goes straight to
-their tracking screen, and the waiter view skips it entirely. Once the customer taps
+only to a fresh customer; someone with an order still in progress (not yet paid) goes
+straight to their tracking screen, and the waiter view skips it entirely. Once the customer taps
 **View the menu** the tab remembers it (session storage), so reloading mid-browse stays
 on the menu rather than bouncing back here.
 

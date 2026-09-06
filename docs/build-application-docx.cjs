@@ -260,7 +260,7 @@ body.push(...shot('The staged git commit history (git log --oneline)'));
 body.push(h1('4.0 What the Application Does, Step by Step'));
 
 body.push(h3('4.1 Welcome Screen'));
-body.push(p('Opening the app shows a short welcome page for the active venue — its name and address, a one-line explanation of how ordering works, and a "View the menu" button. It is shown only to a fresh customer; someone with an order already in progress goes straight to their tracking screen, and the waiter view skips it. Once the customer taps "View the menu" the browser tab remembers it, so reloading mid-browse stays on the menu.'));
+body.push(p('Opening the app shows a short welcome page for the active venue — its name and address, a one-line explanation of how ordering works, and a "View the menu" button. It is shown only to a fresh customer; someone with an order still in progress (not yet paid) goes straight to their tracking screen, and the waiter view skips it. Once the customer taps "View the menu" the browser tab remembers it, so reloading mid-browse stays on the menu.'));
 body.push(...shot('The welcome screen for the active venue'));
 
 body.push(h3('4.2 Menu Browsing'));
