@@ -65,6 +65,7 @@ export default function App() {
 
   async function goHome() {
     enteredMenu.clear();
+    setCartOpen(false);
     if (me.role === 'waiter') {
       pendingView.current = 'landing'; // survive the role-change re-sync
       await setRole('customer');
