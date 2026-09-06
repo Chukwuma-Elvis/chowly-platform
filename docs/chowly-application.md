@@ -20,7 +20,7 @@ every step of that story, and how a stranger can use the deployed link.
 | API       | Node + Express, `pg` | Small, explicit JSON API. No ORM — the queries are short and readable. |
 | Sessions  | `express-session` + `connect-pg-simple` | The Customer/Waiter switch is a role kept in a signed cookie; the session store lives in Postgres so it survives a server restart on the host. |
 | Client    | React + Vite + Tailwind CSS | Single-page app. Tailwind carries a small "fine dining" design system (cream ground, terracotta accent, a serif display face). |
-| Hosting   | Render | One managed Postgres instance + one Node web service, wired together by `render.yaml`. |
+| Hosting   | Render, then Vercel | First deployed on Render (one web service + Render Postgres); Vercel added afterwards because Render's free tier is slow to wake from idle. See 1.5. |
 
 There is no login. The brief only asks for "a way to act as the customer and as the
 waiter", so the app has a **Customer / Waiter** toggle in the header and nothing more.
@@ -120,28 +120,31 @@ estimate with an open complaint and a 1-star rating.
 
 ### 1.5 Deployment
 
-The application is deployed **twice** from the same repository:
+The application was **first deployed on Render** — a single free Node web service
+(serving the SPA and the API together) plus a free Render Postgres instance, wired up by
+`render.yaml`. That deployment works, but Render's free web service **sleeps after ~15
+minutes idle** and takes **roughly 50 seconds** to wake on the next request, so a
+facilitator opening a cold link would sit on a blank page for the best part of a minute.
 
-| | Platform | Database | Serves |
+To fix that, a **second deployment was added on Vercel**, from the same repository. On
+Vercel the static SPA is served straight from the CDN (instant) and the API runs as one
+serverless function that cold-starts in a fraction of a second against Neon (serverless
+Postgres). Vercel is therefore the link to use; Render is kept as a fallback and to show
+the same code runs unchanged as a long-lived server.
+
+| Order | Platform | Database | Serves |
 |---|---|---|---|
-| Primary | **Vercel** | Neon (serverless Postgres) | SPA on the CDN; API as one serverless function |
-| Backup | **Render** | Render Postgres | one Node web service (SPA + API) |
+| 1st (fallback) | **Render** | Render Postgres | one Node web service — SPA + API |
+| 2nd (use this)  | **Vercel** | Neon (serverless Postgres) | SPA on the CDN; API as one serverless function |
 
-**Why two.** Render's free web service **sleeps after ~15 minutes idle** and takes
-**roughly 50 seconds** to wake on the next request — a facilitator opening a cold link
-would sit on a blank page for the best part of a minute. Vercel was added as the primary
-link because its static SPA is served straight from the CDN (instant) and the API
-function cold-starts in a fraction of a second against Neon's always-on serverless
-Postgres. The Render deployment is kept as a fallback and to show the same code runs
-unchanged as a long-lived server.
-
-The Express app is factored into `server/src/app.js` (the app) and two thin entry points:
-`server/src/index.js` calls `app.listen()` for Render and local use; `api/serverless.js`
-exports the same app as a Vercel function. `server/src/bootstrap.js` loads `schema.sql`,
-`seed.sql` and `menu_images.sql` the first time the app runs against an empty database
-(checked via the `menu_item` table; a no-op once it exists), so neither platform needs a
-shell for the initial data load. `db.js` enables SSL when `NODE_ENV=production`, and the
-session cookie is `secure` behind both platforms' HTTPS.
+Adding Vercel meant factoring the Express app into `server/src/app.js` (the app) plus two
+thin entry points: `server/src/index.js` still calls `app.listen()` for Render and local
+use; `api/serverless.js` exports the same app as a Vercel function.
+`server/src/bootstrap.js` loads `schema.sql`, `seed.sql` and `menu_images.sql` the first
+time the app runs against an empty database (checked via the `menu_item` table; a no-op
+once it exists), so neither platform needs a shell for the initial data load. `db.js`
+enables SSL when `NODE_ENV=production`, and the session cookie is `secure` behind both
+platforms' HTTPS.
 
 **Render** (`render.yaml`): a free Postgres instance and a free Node web service in the
 same region; `DATABASE_URL` from the database, `SESSION_SECRET` generated,

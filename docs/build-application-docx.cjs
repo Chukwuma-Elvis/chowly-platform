@@ -151,8 +151,8 @@ body.push(lead('Name: ', 'Chukwuma Nnaemeka'));
 body.push(lead('Assignment: ', 'Chowly (Build) — TeSA Software Engineering'));
 body.push(lead('Date submitted: ', '____________________'));
 body.push(lead('Git repository: ', '____________________  (paste your GitHub URL)'));
-body.push(lead('Deployed application (Vercel — primary): ', '____________________'));
-body.push(lead('Deployed application (Render — fallback): ', '____________________'));
+body.push(lead('Deployed application — Vercel (use this): ', '____________________'));
+body.push(lead('Deployed application — Render (first deploy, ~50 s cold start): ', '____________________'));
 body.push(p(
   'This document reports on the build of Chowly, an in-restaurant platform. A visiting ' +
   'customer opens the app at their table, browses the food and drinks menu and places an ' +
@@ -172,7 +172,7 @@ body.push(bullet([new TextRun({ text: 'Database — ', bold: true }), new TextRu
 body.push(bullet([new TextRun({ text: 'API — ', bold: true }), new TextRun('Node + Express with the pg driver. No ORM; the queries are short and readable.')]));
 body.push(bullet([new TextRun({ text: 'Sessions — ', bold: true }), new TextRun('express-session with a connect-pg-simple store, so the current role survives a server restart on the host.')]));
 body.push(bullet([new TextRun({ text: 'Client — ', bold: true }), new TextRun('React + Vite + Tailwind CSS. A single-page app carrying a small "fine dining" design system (cream ground, terracotta accent, a serif display face) taken from a Figma Make design.')]));
-body.push(bullet([new TextRun({ text: 'Hosting — ', bold: true }), new TextRun('Vercel (SPA on the CDN + the API as a serverless function, Neon Postgres) as the primary link; Render (one Node web service + Render Postgres) as a fallback. See 2.5.')]));
+body.push(bullet([new TextRun({ text: 'Hosting — ', bold: true }), new TextRun('first deployed on Render (one Node web service + Render Postgres); Vercel added afterwards (SPA on the CDN + the API as a serverless function, Neon Postgres) because Render’s free tier is slow to wake from idle. See 2.5.')]));
 body.push(p('There is no login. The brief only asks for "a way to act as the customer and as the waiter", so the app has a Customer / Waiter toggle in the header and nothing more.'));
 
 body.push(h3('2.2 Project Structure'));
@@ -222,16 +222,16 @@ body.push(table([4300, 1500, 8150], [
 ]));
 
 body.push(h3('2.5 Deployment'));
-body.push(p('The application is deployed twice from the same repository. Vercel is the primary link: the SPA is served from the CDN and the API runs as one serverless function against Neon (serverless Postgres). Render is kept as a fallback and runs the same code as a long-lived Node web service against Render Postgres.'));
-body.push(lead('Why two. ', 'Render’s free web service sleeps after about 15 minutes idle and takes roughly 50 seconds to wake on the next request, so a facilitator opening a cold link would sit on a blank page for the best part of a minute. Vercel was added as the primary link because its static SPA loads from the CDN instantly and the API function cold-starts in a fraction of a second against Neon’s always-on database. Keeping Render as well shows the same code runs unchanged as a plain server.'));
-body.push(p('The Express app is factored into server/src/app.js (the app) with two thin entry points: server/src/index.js calls app.listen() for Render and local use, and api/serverless.js exports the same app as a Vercel function. server/src/bootstrap.js loads schema.sql, seed.sql and menu_images.sql the first time the app runs against an empty database (checked via the menu_item table; a no-op once it exists), so neither platform needs a shell for the initial data load. db.js turns on SSL when NODE_ENV is production, and the session cookie is secure behind both platforms’ HTTPS.'));
+body.push(p('The application was first deployed on Render: one free Node web service serving the SPA and the API together, plus a free Render Postgres instance, wired up by render.yaml. That works, but Render’s free web service sleeps after about 15 minutes idle and takes roughly 50 seconds to wake on the next request, so a facilitator opening a cold link would sit on a blank page for the best part of a minute.'));
+body.push(p('To fix that, a second deployment was added on Vercel, from the same repository. On Vercel the static SPA is served straight from the CDN (instant) and the API runs as one serverless function that cold-starts in a fraction of a second against Neon (serverless Postgres). Vercel is therefore the link to use; Render is kept as a fallback and to show the same code runs unchanged as a long-lived server.'));
+body.push(p('Adding Vercel meant factoring the Express app into server/src/app.js (the app) plus two thin entry points: server/src/index.js still calls app.listen() for Render and local use, and api/serverless.js exports the same app as a Vercel function. server/src/bootstrap.js loads schema.sql, seed.sql and menu_images.sql the first time the app runs against an empty database (checked via the menu_item table; a no-op once it exists), so neither platform needs a shell for the initial data load. db.js turns on SSL when NODE_ENV is production, and the session cookie is secure behind both platforms’ HTTPS.'));
 body.push(lead('Render ', '(render.yaml): a free Postgres instance and a free Node web service in the same region. The build command runs "npm install --include=dev" for the client because Render sets NODE_ENV=production during the build, which would otherwise skip Vite and Tailwind and fail with "vite: not found". The health check is a plain liveness check that does not touch the database, so a slow first-boot database cannot fail the deploy.'));
 body.push(lead('Vercel ', '(vercel.json): client/ is built and served as static output; /api/* is rewritten to the api/serverless.js function; everything else falls back to index.html. The Neon database is created from the Vercel dashboard (Storage tab, no separate Neon account) and its connection string is injected automatically; db.js accepts DATABASE_URL, POSTGRES_URL or POSTGRES_PRISMA_URL. SESSION_SECRET is added by hand; NODE_ENV=production is automatic.'));
 body.push(p('To deploy to Vercel: import the GitHub repo at vercel.com/new; in the project, Storage → Create Database → Neon; add SESSION_SECRET under Settings → Environment Variables; redeploy. The first request loads the schema and seed, then it is instant. To reset either database by hand, run node db/setup.mjs from a laptop against that database’s connection string.'));
-body.push(...shot('The Vercel project — build settings and DATABASE_URL / SESSION_SECRET'));
+body.push(...shot('The Render Blueprint creating chowly-db and the chowly web service (first deployment)'));
+body.push(...shot('The application open at its Render URL — note the ~50 s cold start'));
+body.push(...shot('The Vercel project — Storage (Neon) and the SESSION_SECRET variable'));
 body.push(...shot('The application open at its Vercel URL (loads instantly)'));
-body.push(...shot('The Render Blueprint creating chowly-db and the chowly web service'));
-body.push(...shot('The application open at its Render URL'));
 
 // 3.0 How AI was used
 body.push(h1('3.0 How AI Was Used'));
