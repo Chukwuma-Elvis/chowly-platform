@@ -15,7 +15,7 @@ Built for the TeSA **CHOWLY (BUILD)** assignment, on top of the graded data mode
 | Database | PostgreSQL (`db/schema.sql`, `db/seed.sql`)         |
 | API      | Node + Express (`server/`), `pg`, session role switch |
 | Client   | React + Vite + Tailwind CSS (`client/`)             |
-| Hosting  | Render (web service + Render Postgres)              |
+| Hosting  | **Vercel** (SPA on the CDN + `/api` function, Neon Postgres) — primary; **Render** (web service + Render Postgres) — fallback |
 
 ## Repository layout
 
@@ -75,29 +75,40 @@ git push -u origin main
 (Create the empty repo on GitHub first — no README/licence, so the histories don't
 diverge.) The build has no secrets in it; `server/.env` is git-ignored.
 
-## Deploy to Render
+## Deploy
 
-The repo ships a `render.yaml` blueprint: one free Postgres instance plus one Node
-web service that builds `client/` and serves it alongside the API.
+The app is deployed on both platforms from this one repo. **Vercel is the primary link**
+— Render's free web service sleeps after ~15 min idle and takes ~50 s to wake, so a cold
+link looks broken; Vercel serves the SPA from the CDN and the API as a fast serverless
+function. Render is kept as a fallback.
 
-1. **Blueprint.** Render dashboard → **New +** → **Blueprint** → connect the GitHub
-   repo. Render reads `render.yaml` and creates the `chowly-db` database and the
-   `chowly` web service. `DATABASE_URL` is wired from the database, `SESSION_SECRET`
-   is generated, `NODE_ENV=production`. Click **Apply** and wait for the first deploy.
-2. **Open the service URL.** That's it — the server loads `schema.sql`, `seed.sql` and
-   `menu_images.sql` automatically the first time it starts against an empty database
-   (the free tier has no Shell). It is a no-op on every later deploy, so data is kept.
+Both self-load the database: `server/src/bootstrap.js` runs `schema.sql`, `seed.sql` and
+`menu_images.sql` the first time the app hits an empty database, and is a no-op after
+that, so redeploys keep the data.
 
-Use the **Customer / Waiter** switch to move between roles. Every later `git push` to
-`main` redeploys automatically. On the free tier the web service sleeps after ~15 min
-idle — the first request after that takes ~30–60 s to wake.
+### Vercel (primary) — `vercel.json`
 
-### Resetting or reloading the hosted database
+1. **A database.** Create a free project at [neon.tech](https://neon.tech). Copy the
+   **pooled** connection string (`...-pooler...`, `?sslmode=require`).
+2. **Import.** [vercel.com/new](https://vercel.com/new) → import the GitHub repo. Vercel
+   reads `vercel.json` (build → `client/dist`, `/api/*` → the function). Add env vars:
+   `DATABASE_URL` = the Neon string, `SESSION_SECRET` = any long random string. Deploy.
+3. **Open the URL.** The first request loads the schema + seed (a few seconds), then it's
+   instant. Every `git push` redeploys.
 
-There is no Shell on the free tier, so run `setup.mjs` from your machine against the
-database's **External Connection String** (Render dashboard → `chowly-db` → *Connect*):
+### Render (fallback) — `render.yaml`
+
+1. Render dashboard → **New +** → **Blueprint** → connect the repo. Render reads
+   `render.yaml` and creates `chowly-db` and the `chowly` web service; `DATABASE_URL`,
+   `SESSION_SECRET` and `NODE_ENV` are set for you. **Apply**.
+2. Open the service URL. It self-loads the database on first boot.
+
+### Resetting or reloading a hosted database
+
+Run `setup.mjs` from your machine against that database's connection string
+(Neon dashboard, or Render → `chowly-db` → *Connect* → external string):
 
 ```bash
-DATABASE_URL="postgres://…external…" node db/setup.mjs           # full reset
-DATABASE_URL="postgres://…external…" node db/setup.mjs --images  # just re-apply photos
+DATABASE_URL="postgres://…" node db/setup.mjs           # full reset (schema + seed + images)
+DATABASE_URL="postgres://…" node db/setup.mjs --images  # just re-apply menu photos
 ```

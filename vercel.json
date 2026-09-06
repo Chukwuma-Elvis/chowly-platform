@@ -1,0 +1,12 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "buildCommand": "npm --prefix client install --include=dev && npm --prefix client run build && npm --prefix server install --omit=dev",
+  "outputDirectory": "client/dist",
+  "functions": {
+    "api/serverless.js": { "includeFiles": "db/**", "maxDuration": 30 }
+  },
+  "rewrites": [
+    { "source": "/api/(.*)", "destination": "/api/serverless" },
+    { "source": "/(.*)", "destination": "/index.html" }
+  ]
+}
