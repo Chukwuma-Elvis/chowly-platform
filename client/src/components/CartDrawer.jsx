@@ -101,7 +101,7 @@ export default function CartDrawer({ open, onClose, onPlaced }) {
               </label>
               <label className="block text-xs text-muted">
                 Table
-                <TableSelect value={tableNumber} onChange={setTableNumber} />
+                <TableSelect value={tableNumber} onChange={setTableNumber} markTaken />
               </label>
             </div>
           )}

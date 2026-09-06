@@ -77,6 +77,7 @@ All JSON, under `/api`. The current role lives in a signed session cookie
 | `POST /api/session/role` | any | flip the Customer/Waiter view (keeps identity) |
 | `POST /api/session/switch` | any | full reset — forget identity and current order |
 | `GET /api/menu` | any | available items for the venue (incl. `image_url`) |
+| `GET /api/tables` | any | tables that currently have an order in progress |
 | `GET /api/staff` | waiter | waiter / chef / bartender lists for the dropdowns |
 | `POST /api/orders` | customer | place an order (transaction; price snapshot; wait estimate) |
 | `POST /api/orders/lookup` | any | find an order by name + table, resume the session on it |
@@ -244,9 +245,11 @@ lists the lines with quantity steppers and a running total. **Continue** asks fo
 3. sets the order's **estimated wait** to `max(sum of kitchen prep times, sum of bar
    prep times)` — the kitchen and bar work in parallel.
 
-**One open order per table.** If that table already has an order that isn't `paid` (or
-`cancelled`), the order is refused with a 409 and the cart offers a link straight to the
-current order. A new order can only be placed at the table once the previous one is paid.
+**One open order per table.** The checkout dropdown greys out any table that already has
+an order in progress (`GET /api/tables`). If one is chosen anyway — or taken between
+loading the form and submitting — the order is refused with a 409 and the cart offers a
+link straight to that current order. A new order can only be placed at the table once
+the previous one is paid.
 
 The customer lands on the **order tracking** screen: status, a live **MM:SS countdown**
 to the estimated ready time (which flips to "running late" once the estimate is passed,

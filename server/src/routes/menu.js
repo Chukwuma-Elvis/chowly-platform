@@ -24,6 +24,22 @@ router.get('/menu', async (req, res, next) => {
   }
 });
 
+// Tables that currently have an order in progress (not yet paid). The checkout
+// dropdown greys these out - one open order per table.
+router.get('/tables', async (req, res, next) => {
+  try {
+    const { rows } = await query(
+      `SELECT DISTINCT table_number
+       FROM   orders
+       WHERE  restaurant_id = $1 AND status NOT IN ('paid', 'cancelled')`,
+      [RESTAURANT_ID],
+    );
+    res.json({ taken: rows.map((r) => r.table_number) });
+  } catch (err) {
+    next(err);
+  }
+});
+
 // Staff lists that fill the waiter's assignment dropdowns.
 router.get('/staff', requireWaiter, async (req, res, next) => {
   try {
