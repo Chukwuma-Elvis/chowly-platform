@@ -88,12 +88,17 @@ that, so redeploys keep the data.
 
 ### Vercel (primary) — `vercel.json`
 
-1. **A database.** Create a free project at [neon.tech](https://neon.tech). Copy the
-   **pooled** connection string (`...-pooler...`, `?sslmode=require`).
-2. **Import.** [vercel.com/new](https://vercel.com/new) → import the GitHub repo. Vercel
-   reads `vercel.json` (build → `client/dist`, `/api/*` → the function). Add env vars:
-   `DATABASE_URL` = the Neon string, `SESSION_SECRET` = any long random string. Deploy.
-3. **Open the URL.** The first request loads the schema + seed (a few seconds), then it's
+You only need a **Vercel account** — the database is provisioned through it (no separate
+Neon signup).
+
+1. **Import.** [vercel.com/new](https://vercel.com/new) → import the GitHub repo. Vercel
+   reads `vercel.json` (build → `client/dist`, `/api/*` → the function).
+2. **Database.** Project → **Storage** → **Create Database** → **Neon** (Postgres). Vercel
+   creates it and injects the connection env var automatically. `db.js` accepts
+   `DATABASE_URL`, `POSTGRES_URL` or `POSTGRES_PRISMA_URL`, so no renaming is needed.
+3. **Session secret.** Project → **Settings → Environment Variables** → add
+   `SESSION_SECRET` = any long random string. Redeploy.
+4. **Open the URL.** The first request loads the schema + seed (a few seconds), then it's
    instant. Every `git push` redeploys.
 
 ### Render (fallback) — `render.yaml`

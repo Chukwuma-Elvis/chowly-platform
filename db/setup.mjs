@@ -26,7 +26,8 @@ function loadEnvFile(path) {
 }
 loadEnvFile(join(here, '..', 'server', '.env'));
 
-const connectionString = process.env.DATABASE_URL;
+const connectionString =
+  process.env.DATABASE_URL || process.env.POSTGRES_URL || process.env.POSTGRES_PRISMA_URL;
 if (!connectionString) {
   console.error('DATABASE_URL is not set (checked the shell and server/.env).');
   process.exit(1);

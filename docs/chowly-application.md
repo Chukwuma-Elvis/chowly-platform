@@ -152,8 +152,10 @@ build fails with "vite: not found".
 
 **Vercel** (`vercel.json`): `client/` is built and served as static output;
 `/api/*` is rewritten to the `api/serverless.js` function; everything else falls back to
-`index.html`. `DATABASE_URL` (a Neon pooled connection string) and `SESSION_SECRET` are
-set in the Vercel project; `NODE_ENV=production` is automatic.
+`index.html`. The Neon database is created from the Vercel dashboard (Storage → Create
+Database → Neon — no separate Neon account), which injects the connection string; `db.js`
+accepts `DATABASE_URL`, `POSTGRES_URL` or `POSTGRES_PRISMA_URL`. `SESSION_SECRET` is added
+by hand; `NODE_ENV=production` is automatic.
 
 To reset or reload either database by hand, run `node db/setup.mjs` from a laptop against
 that database's connection string. Step-by-step instructions for both are in `README.md`.
